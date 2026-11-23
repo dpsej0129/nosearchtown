@@ -132,7 +132,7 @@ common.people.forEach(pp => { pp.hint = pp.hint.map(t => encStr(t, HK)); });
 const GAME_DATA = Object.assign({}, common, { scenes, chapters });
 
 /* ---------- 조립 ---------- */
-let engine = read('engine.js').replace('/*__HASH__*/', hashSrc);
+let engine = read('engine.js').replace('/*__HASH__*/', hashSrc).replace('/*__ICONS__*/', () => read('icons.js'));
 const dataJs = '/* ============================================================\n   ③ GAME_DATA — 시나리오 데이터 (엔진과 분리)\n   정답·검색어·비밀번호는 정규화 후 해시값만 들어 있다.\n   ============================================================ */\nconst GAME_DATA = ' +
   JSON.stringify(GAME_DATA, null, 1).replace(/<\//g, '<\\/') + ';';
 const html = read('template.html')

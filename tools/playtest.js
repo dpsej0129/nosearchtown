@@ -92,7 +92,7 @@ async function wrongCp(vals) {
   /* ---------------- 서장 ---------------- */
   log('서장');
   await icon('메일'); await p.click('.attach'); await p.waitForTimeout(300);
-  await click('.win[data-id=photo] .pv-tools button:has-text("확대")'); await click('.win[data-id=photo] .pv-tools button:has-text("확대")');
+  await click('.win[data-id=photo] .pv-tools button[aria-label="확대"]'); await click('.win[data-id=photo] .pv-tools button[aria-label="확대"]');
   await shot('photo_zoom'); await click('.win[data-id=photo] .wbtn.close');
   // 한 단어 규칙, 0건
   await search('유메 링'); assert(await p.$('text=한 단어만 입력하세요'), '띄어쓰기 안내');
@@ -169,7 +169,7 @@ async function wrongCp(vals) {
   await shot('sns_tag');
   await click('.win[data-id=sns] .post .ph b[data-acc="hnt_shogo"] >> nth=0'); await p.waitForTimeout(200);
   await click('.win[data-id=sns] figure.photo >> nth=0'); await p.waitForTimeout(300);
-  for (let i = 0; i < 4; i++) await click('.win[data-id=photo] .pv-tools button:has-text("확대")');
+  for (let i = 0; i < 4; i++) await click('.win[data-id=photo] .pv-tools button[aria-label="확대"]');
   await shot('netcafe_zoom'); await click('.win[data-id=photo] .wbtn.close');
   for (const a of ['@yumering_0721', '@torii_minshuku', 'saki_enikki', '@ekimae_udon']) {
     await focus('sns'); await p.fill('.win[data-id=sns] .sns-form .inp', a); await p.press('.win[data-id=sns] .sns-form .inp', 'Enter'); await p.waitForTimeout(200);
@@ -234,7 +234,7 @@ async function wrongCp(vals) {
     const sels = card.locator('select');
     await sels.nth(0).selectOption({ label: D.status[v[1]] }); await sels.nth(1).selectOption({ label: D.where[v[2]] }); await sels.nth(2).selectOption({ label: D.role[v[3]] });
   }
-  async function check() { await focus('record'); await p.evaluate(() => { Engine._state().lastCheck = 0; }); await click('.win[data-id=record] .rec-prog .btn'); await p.waitForTimeout(250); }
+  async function check() { await focus('record'); await p.evaluate(() => { Engine._state().lastCheck = 0; }); await click('.win[data-id=record] .rec-head .btn'); await p.waitForTimeout(250); }
   const keys = Object.keys(A);
   await fill(keys[0], A[keys[0]]); await fill(keys[1], A[keys[1]]); await fill(keys[2], ['도리이 사키', 0, 3, 10]);
   await check(); s = await st(); assert(Object.keys(s.conf).length === 0, '틀린 칸이 있으면 확정 안 됨');
@@ -255,7 +255,7 @@ async function wrongCp(vals) {
   await click('.win[data-id=search] button:has-text("기록을 닫는다")'); await p.waitForTimeout(400);
   await shot('ending_true');
   const endText = await p.locator('#ending').textContent();
-  assert(/정정/.test(endText) && /8\/8/.test(endText) && /★ 12\/12/.test(endText), '엔딩 화면 통계');
+  assert(/정정/.test(endText) && /8\/8/.test(endText) && /숨은 기록\s*12\/12/.test(endText), '엔딩 화면 통계');
   log('진엔딩 통계:', endText.replace(/\s+/g, ' ').slice(0, 200));
 
   /* ---------------- 다른 엔딩 두 개 ---------------- */

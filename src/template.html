@@ -12,22 +12,79 @@
 <body>
 <!-- ① HTML -->
 <div id="title">
-  <div class="t-box">
-    <div class="t-signal">신호 없음 · 2026.11</div>
-    <h1>권외<small>검색되지 않는 마을</small></h1>
-    <div class="t-bars"><i></i><i></i><i></i><i></i><b>권외</b></div>
-    <div class="t-menu">
-      <button id="t-continue" class="hidden">이어하기</button>
-      <button id="t-new">처음부터</button>
-      <button id="t-delete" class="danger hidden">저장 데이터 삭제</button>
+  <div class="t-wrap">
+    <div class="t-text t-in">
+      <div class="t-status" aria-label="신호 없음"><i></i><i></i><i></i><i></i><span>권외</span></div>
+      <h1>권외</h1>
+      <div class="t-sub">검색되지 않는 마을</div>
+      <p class="t-premise">2009년 오봉, 한 생방송 주가 지도에서 사라진 마을에서 사라졌다. 그때 당신은 마을 입구의 민박 주인을 범인으로 특정했다. 17년 뒤, 그 기록을 다시 검색한다.</p>
+      <div class="t-actions">
+        <button id="t-continue" class="btn lg pri hidden">이어하기</button>
+        <button id="t-new" class="btn lg pri">처음부터</button>
+      </div>
+      <button id="t-delete" class="t-del hidden">저장 데이터 삭제</button>
+      <div class="t-note">
+        <p>검색창에는 한 단어만 들어갑니다. 인물 이름은 붙여 쓰세요. 진행은 이 브라우저에 자동 저장되고, 플레이 시간은 2~3시간입니다.</p>
+        <p>개발자 도구나 소스를 볼 필요가 없습니다. 모든 단서는 화면 안에 있고, 정답은 소스에 해시로만 들어 있습니다.</p>
+        <p>실종, 스토킹, 인터넷 여론 폭력을 다룹니다. 살인·고어 묘사는 없습니다. 모든 인물·단체·사이트·마을은 가상입니다.</p>
+      </div>
     </div>
-    <div class="t-note">
-      <b>이 게임은 개발자 도구나 소스 확인이 필요 없는 게임입니다.</b><br>
-      모든 단서는 화면 안에 있습니다. 정답은 소스에 평문으로 들어 있지 않습니다.<br>
-      검색창에는 <b>한 단어만</b> 입력할 수 있습니다. 인물 이름은 붙여 쓰세요.<br>
-      진행 상황은 이 브라우저에 자동 저장됩니다. 플레이 시간 약 2~3시간.<br>
-      <span style="color:#c98a95">실종, 스토킹, 인터넷 여론 폭력을 다룹니다. 살인·고어 묘사는 없습니다.<br>
-      등장하는 인물, 단체, 사이트, 마을은 모두 가상입니다.</span>
+    <div class="t-scene t-in" role="img" aria-label="밤의 댐 호숫가. 가로등 하나가 「히나고 12」 주소판이 붙은 전봇대와 셔터 내린 민박을 비춘다">
+      <svg viewBox="0 0 600 640" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="ts-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07080d"/><stop offset=".62" stop-color="#131826"/><stop offset="1" stop-color="#0b0d14"/></linearGradient>
+          <radialGradient id="ts-lamp" cx="372" cy="176" r="210" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f6cf86" stop-opacity=".42"/><stop offset=".35" stop-color="#e9b764" stop-opacity=".12"/><stop offset="1" stop-color="#e9b764" stop-opacity="0"/></radialGradient>
+          <linearGradient id="ts-cone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6cf86" stop-opacity=".22"/><stop offset="1" stop-color="#f6cf86" stop-opacity="0"/></linearGradient>
+          <linearGradient id="ts-refl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6cf86" stop-opacity=".5"/><stop offset="1" stop-color="#f6cf86" stop-opacity="0"/></linearGradient>
+          <linearGradient id="ts-pole" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5b4b35"/><stop offset=".35" stop-color="#2a2722"/><stop offset="1" stop-color="#15171f"/></linearGradient>
+        </defs>
+        <rect width="600" height="640" fill="url(#ts-sky)"/>
+        <g fill="#a3a9b8">
+          <circle cx="62" cy="58" r="1" opacity=".5"/><circle cx="140" cy="112" r=".8" opacity=".35"/><circle cx="214" cy="40" r="1.1" opacity=".55"/><circle cx="288" cy="96" r=".8" opacity=".3"/>
+          <circle cx="520" cy="64" r="1" opacity=".45"/><circle cx="566" cy="150" r=".8" opacity=".3"/><circle cx="96" cy="190" r=".8" opacity=".3"/><circle cx="470" cy="28" r=".9" opacity=".4"/>
+        </g>
+        <path d="M0 330 L70 286 L130 312 L210 258 L280 304 L350 272 L430 318 L520 276 L600 300 L600 420 L0 420Z" fill="#10131d"/>
+        <path d="M0 372 L90 330 L170 360 L250 336 L330 372 L0 420Z" fill="#0d1018"/>
+        <rect x="0" y="420" width="600" height="220" fill="#090b11"/>
+        <path d="M0 420 L70 452 L130 434 L210 470 L280 440 L350 462 L430 432 L520 466 L600 444 L600 420Z" fill="#0d1019" opacity=".9"/>
+        <g stroke="#a3a9b8" stroke-opacity=".07" stroke-width="1"><path d="M20 488 H160"/><path d="M240 512 H330"/><path d="M60 548 H200"/><path d="M420 530 H560"/><path d="M120 596 H300"/></g>
+        <path d="M232 436 L600 404 L600 640 L188 640 Z" fill="#0c0f16"/>
+        <path d="M232 436 L600 404" stroke="#a3a9b8" stroke-opacity=".12"/>
+        <circle cx="372" cy="176" r="210" fill="url(#ts-lamp)"/>
+        <path d="M356 186 L388 186 L470 444 L262 452 Z" fill="url(#ts-cone)"/>
+        <ellipse cx="368" cy="446" rx="118" ry="14" fill="#f6cf86" opacity=".13"/>
+        <g transform="translate(212 330)">
+          <path d="M-8 6 L66 -26 L140 6 Z" fill="#11141d"/>
+          <rect x="0" y="6" width="132" height="102" fill="#141822"/>
+          <rect x="132" y="6" width="8" height="102" fill="#2a2620" opacity=".9"/>
+          <rect x="14" y="16" width="86" height="18" fill="#1d212c"/>
+          <text x="57" y="29.5" font-size="11" fill="#7a8296" text-anchor="middle" font-family="Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, sans-serif" opacity=".7">도리이 민박</text>
+          <rect x="18" y="46" width="84" height="62" fill="#191d27"/>
+          <g stroke="#232836"><path d="M18 54 H102"/><path d="M18 62 H102"/><path d="M18 70 H102"/><path d="M18 78 H102"/><path d="M18 86 H102"/><path d="M18 94 H102"/><path d="M18 102 H102"/></g>
+          <rect x="102" y="46" width="30" height="62" fill="#2b2822" opacity=".55"/>
+        </g>
+        <path d="M0 236 Q220 268 424 226" stroke="#262a36" stroke-width="1.2" fill="none"/>
+        <path d="M434 226 Q520 250 600 238" stroke="#262a36" stroke-width="1.2" fill="none"/>
+        <path d="M0 252 Q220 282 424 240" stroke="#20242f" stroke-width="1" fill="none"/>
+        <rect x="424" y="100" width="12" height="352" fill="url(#ts-pole)"/>
+        <rect x="396" y="216" width="68" height="5" fill="#1c1f29"/>
+        <circle cx="402" cy="214" r="3" fill="#2a2e3a"/><circle cx="458" cy="214" r="3" fill="#2a2e3a"/>
+        <path d="M424 168 Q394 160 376 172" stroke="#22252f" stroke-width="4" fill="none"/>
+        <rect x="360" y="168" width="24" height="7" rx="2" fill="#2e323e"/>
+        <ellipse cx="372" cy="177" rx="9" ry="3" fill="#ffe7b0"/>
+        <g transform="translate(418 286)">
+          <rect x="0" y="0" width="24" height="54" rx="2" fill="#1d4f91"/>
+          <rect x="0" y="0" width="24" height="54" rx="2" fill="#f6cf86" opacity=".14"/>
+          <g fill="#f4f6fa" text-anchor="middle" font-family="Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, sans-serif">
+            <text x="12" y="11" font-size="5">미즈하초</text>
+            <text x="12" y="26" font-size="8" font-weight="600">히나고</text>
+            <text x="12" y="45" font-size="15" font-weight="600">12</text>
+          </g>
+        </g>
+        <rect x="362" y="454" width="20" height="150" fill="url(#ts-refl)"/>
+        <g fill="#f6cf86"><rect x="356" y="474" width="32" height="2" opacity=".22"/><rect x="360" y="498" width="24" height="2" opacity=".16"/><rect x="354" y="526" width="36" height="2" opacity=".1"/><rect x="362" y="560" width="20" height="2" opacity=".06"/></g>
+        <rect x="426" y="452" width="8" height="90" fill="#15171f" opacity=".5"/>
+      </svg>
     </div>
   </div>
 </div>
@@ -38,11 +95,11 @@
 </div>
 
 <div id="taskbar">
-  <button id="tb-start" title="열린 창 모두 최소화">◆</button>
+  <button id="tb-start" title="열린 창 모두 최소화" aria-label="열린 창 모두 최소화"></button>
   <div id="tb-wins"></div>
   <div id="tb-tray">
-    <button id="tb-found" title="지금까지 연 페이지 목록">발견 페이지 0/0</button>
-    <button id="tb-sound" title="소리 켜기/끄기">♪</button>
+    <button id="tb-found" title="지금까지 연 페이지 목록">발견 0/0</button>
+    <button id="tb-sound" title="소리 켜기/끄기" aria-label="소리 켜기/끄기"></button>
     <div id="tb-clock"></div>
   </div>
 </div>

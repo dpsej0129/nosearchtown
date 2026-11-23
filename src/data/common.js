@@ -33,7 +33,7 @@ const ROLE = [
 module.exports = {
   meta: {
     title: '권외 — 검색되지 않는 마을',
-    reportTpl: '『권외 — 검색되지 않는 마을』 클리어! 엔딩 「{ending}」 · 플레이 시간 {time} · 힌트 {hints}회 · 정리된 인물 {people} · 발견 페이지 {found} · 숨겨진 아카이브 ★{star}'
+    reportTpl: '『권외 — 검색되지 않는 마을』 클리어! 엔딩 「{ending}」 · 플레이 시간 {time} · 힌트 {hints}회 · 정리된 인물 {people} · 발견 페이지 {found} · 숨은 기록 {star}'
   },
   options: { status: STATUS, where: WHERE, role: ROLE },
 
@@ -89,7 +89,7 @@ module.exports = {
   ],
 
   desktop: {
-    sticky: '<b>트립 키 메모</b>처음 「특정」한 날!<br>(연호로 쓸 것)<br><br>형식 예시 : <b>S640107</b><br><span style="font-size:11px">↑ 쇼와 64년 1월 7일이면 이렇게</span>'
+    sticky: '<b>트립 키 메모</b>처음 「특정」한 날!<br>(연호로 쓸 것)<br><br>형식 예시 : <span class="code">S640107</span><br><span style="font-size:11px">↑ 쇼와 64년 1월 7일이면 이렇게</span>'
   },
 
   nanaRule: '<b>■ 나나채널 이용 안내 ■</b><br>' +
@@ -112,7 +112,7 @@ module.exports = {
     lockHint: '힌트: 내 생일 (월일 4자리)',
     lockCode: '0721',
     boxes: [{ id: 'p-in', name: '받은 메일함' }, { id: 'p-out', name: '보낸 메일함' }, { id: 'p-draft', name: '임시 보관함' }],
-    fx: { timeline: ['t4_phone'], toast: ['폴더폰 잠금 해제', '2009년 유메의 메일함이 열렸습니다.', 'good'] }
+    fx: { timeline: ['t4_phone'], toast: ['폴더폰 잠금 해제', '2009년 유메의 메일함이 열렸습니다', 'good'] }
   },
 
   finalIntro: '<h2 style="margin-top:0">특정, 끝.</h2>' +
@@ -155,7 +155,7 @@ module.exports = {
       ],
       after: { mails: ['m_end_saki'] },
       thread: 't1_p5',
-      searchHint: '메아리 검색에 그 사람의 이름을 붙여서 검색해 보세요.',
+      searchHint: '메아리 검색에 그 사람의 이름을 붙여서 검색해 보세요',
       epilogue: '도리이 마코토. 검색 결과 1건.\n\n특정은 끝났다.\n이번에는, 바로잡는 쪽으로.'
     }
   },

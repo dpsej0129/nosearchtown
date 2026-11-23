@@ -6,7 +6,7 @@ module.exports = {
   id: 'c4', num: '제4장', title: '댓글 장인',
   intro: '폴더폰에 남은 숫자들. 탄막 속의 눈동자.\n그리고 200만 명이 지켜보는 폭로 채널.\n\n17년이 지나도, 사람의 말버릇은 잘 바뀌지 않는다.',
   unlocks: ['phone'],
-  start: { flags: ['sns2026'], mails: ['m4_1'], timeline: ['t4_teaser'], toast: ['중얼중얼', '「2026 현재」 탭이 열렸습니다.', 'good'] },
+  start: { flags: ['sns2026'], mails: ['m4_1'], timeline: ['t4_teaser'], toast: ['중얼중얼', '「2026 현재」 탭이 열렸습니다', 'good'] },
 
   mails: [
     { id: 'm4_1', fromName: '유메링', from: 'hinago_0815@meari-mail.jp', subject: '언니의 폴더폰',

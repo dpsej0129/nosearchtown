@@ -48,7 +48,7 @@ module.exports = {
     { era: '2009', id: 'hnt_shogo', name: '쇼고', color: '#444', av: '쇼',
       bio: '대학생. 도쿄. 영상 연구회. 생방송 보는 게 낙이라는 거지(o_o)', joined: '2009/03/14', loc: '도쿄',
       following: ['yumering_0721', 'torii_minshuku', 'saki_enikki', 'mm_official'], followers: [], fwerCount: 0 },
-    { era: '2009', id: 'hida_cider', name: '히다 사과사이다 공식', color: '#c0392b', av: '🍎',
+    { era: '2009', id: 'hida_cider', name: '히다 사과사이다 공식', color: '#c0392b', av: '히',
       bio: '히다 지방 자판기에서만 파는 사과사이다. 판매 자판기 지도는 홈페이지에서!', joined: '2009/01/20',
       following: ['torii_minshuku'], followers: ['torii_minshuku', 'yumering_0721'], fwerCount: 211 },
     { era: '2009', id: 'ekimae_udon', name: '역 앞 우동 「한 그릇」', color: '#8a6d3b', av: '우',

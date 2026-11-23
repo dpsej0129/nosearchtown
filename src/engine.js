@@ -5,6 +5,7 @@
 (function(){
 'use strict';
 /*__HASH__*/
+/*__ICONS__*/
 
 var E = window.Engine = {};
 var D = null;           // GAME_DATA
@@ -182,7 +183,7 @@ function discover(kind, id, title){
   if (kind === 'page' && IDX.pages[id] && IDX.pages[id].hidden && !S.hidden[id]) {
     S.hidden[id] = true;
     var n = Object.keys(S.hidden).length;
-    toast('★ 숨겨진 아카이브 단서 발견', '(' + n + '/' + IDX.hiddenTotal + ') ' + title, 'star');
+    toast('숨은 기록을 찾았습니다', title + ' · ' + n + '/' + IDX.hiddenTotal, 'star');
     sfx('star');
   }
   updateFound(); save();
@@ -194,7 +195,7 @@ function fx(f){
   (f.cards || []).forEach(addCard);
   var tlAdded = 0;
   (f.timeline || []).forEach(function(id){ if (addTl(id)) tlAdded++; });
-  if (tlAdded) toast('사건 연표', tlAdded + '개의 사건이 연표에 추가되었습니다.');
+  if (tlAdded) toast('사건 연표', '사건 ' + tlAdded + '개가 연표에 추가되었습니다');
   (f.flags || []).forEach(function(k){ S.flags[k] = true; });
   (f.mails || []).forEach(function(id, i){ setTimeout(function(){ deliverMail(id); }, 900 + i * 1500); });
   if (f.toast) toast(f.toast[0], f.toast[1], f.toast[2]);
@@ -205,7 +206,7 @@ function addCard(id){
   S.cards[id] = true;
   if (!S.rec[id]) S.rec[id] = { n:'', s:-1, w:-1, r:-1 };
   var p = IDX.people[id];
-  toast('미정리 기록부', '「' + p.handle + '」 카드가 추가되었습니다.', 'good');
+  toast('미정리 기록부', '「' + p.handle + '」 카드가 추가되었습니다', 'good');
   sfx('card');
   refreshWin('record');
 }
@@ -215,8 +216,8 @@ function addTl(id){
 }
 function unlockApp(id, quiet){
   if (S.apps[id]) return;
-  S.apps[id] = true; S.newApps[id] = true;
-  if (!quiet && APPS[id] && !APPS[id].quiet) { toast('새 앱', '「' + APPS[id].name + '」을(를) 열 수 있습니다.', 'good'); sfx('unlock'); }
+  S.apps[id] = true; if (!quiet) S.newApps[id] = true;
+  if (!quiet && APPS[id] && !APPS[id].quiet) { toast('새 앱', '「' + APPS[id].name + '」을(를) 열 수 있습니다', 'good'); sfx('unlock'); }
   renderIcons();
 }
 function deliverMail(id){
@@ -225,7 +226,7 @@ function deliverMail(id){
   var now = gameNow();
   S.mails.push({ id: id, at: now.ymd + ' ' + now.hm });
   var m = IDX.mails[id];
-  toast('✉ 새 메일', (m.fromName || '') + ' — ' + m.subject);
+  toast('새 메일', (m.fromName || '') + ' — ' + m.subject);
   sfx('mail'); save(); renderIcons(); refreshWin('mail');
 }
 
@@ -237,9 +238,9 @@ function openWin(id, title, w, hh){
   var el = h('div', { class:'win', 'data-id': id });
   var tt = h('div', { class:'wtitle', text: title });
   var bar = h('div', { class:'wbar' }, tt,
-    h('button', { class:'wbtn', title:'최소화', 'aria-label':'최소화', onclick:function(e){ e.stopPropagation(); minWin(id); } }, '–'),
-    h('button', { class:'wbtn max', title:'최대화', 'aria-label':'최대화', onclick:function(e){ e.stopPropagation(); maxWin(id); } }, '□'),
-    h('button', { class:'wbtn close', title:'닫기', 'aria-label':'닫기', onclick:function(e){ e.stopPropagation(); closeWin(id); } }, '×'));
+    h('button', { class:'wbtn', title:'최소화', 'aria-label':'최소화', html: ico('minus'), onclick:function(e){ e.stopPropagation(); minWin(id); } }),
+    h('button', { class:'wbtn max', title:'최대화', 'aria-label':'최대화', html: ico('square'), onclick:function(e){ e.stopPropagation(); maxWin(id); } }),
+    h('button', { class:'wbtn close', title:'닫기', 'aria-label':'닫기', html: ico('x'), onclick:function(e){ e.stopPropagation(); closeWin(id); } }));
   var body = h('div', { class:'wbody' });
   var rz = h('div', { class:'wresize' });
   el.appendChild(bar); el.appendChild(body); el.appendChild(rz);
@@ -309,23 +310,23 @@ function renderTaskbar(){
 
 /* ---------------- 앱 목록 ---------------- */
 var APPS = {
-  search:     { name:'메아리 검색',     ic:'검', color:'#2b4fc5', open: function(a){ openSearch(a); } },
-  mail:       { name:'메일',            ic:'✉', color:'#d0475a', open: function(a){ openMail(a); } },
-  record:     { name:'미정리 기록부',   ic:'록', color:'#2f7d58', open: function(){ openRecord(); } },
-  timeline:   { name:'사건 연표',       ic:'연', color:'#6d55c4', open: function(){ openTimeline(); } },
-  checkpoint: { name:'추리 체크포인트', ic:'?',  color:'#e07a2b', open: function(){ openCheckpoint(); } },
-  memo:       { name:'메모장',          ic:'✎', color:'#b98b1d', open: function(){ openMemo(); } },
-  hint:       { name:'단계별 힌트',     ic:'!',  color:'#566781', open: function(){ openHint(); } },
-  nana:       { name:'나나채널',        ic:'7',  color:'#b23128', open: function(a){ openNana(a); } },
-  video:      { name:'밀밀동화',        ic:'▶', color:'#d98f22', open: function(a){ openVideo(a); } },
-  sns:        { name:'중얼중얼',        ic:'@',  color:'#1d9bf0', open: function(a){ openSNS(a); } },
-  phone:      { name:'폴더폰 메일함',   ic:'☎', color:'#5b6370', open: function(){ openPhone(); } },
-  final:      { name:'최종 선택',       ic:'◎', color:'#161b26', open: function(){ openFinal(); } },
-  found:      { name:'발견 기록',       ic:'≡',  color:'#41709c', open: function(){ openFound(); }, quiet:true, noIcon:true }
+  search:     { name:'메아리 검색',     ic:'search', open: function(a){ openSearch(a); } },
+  mail:       { name:'메일',            ic:'mail', open: function(a){ openMail(a); } },
+  record:     { name:'미정리 기록부',   ic:'clipboard-list', open: function(){ openRecord(); } },
+  timeline:   { name:'사건 연표',       ic:'history', open: function(){ openTimeline(); } },
+  checkpoint: { name:'추리 체크포인트', ic:'list-checks', open: function(){ openCheckpoint(); } },
+  memo:       { name:'메모장',          ic:'notebook-pen', open: function(){ openMemo(); } },
+  hint:       { name:'단계별 힌트',     ic:'lightbulb', open: function(){ openHint(); } },
+  nana:       { name:'나나채널',        ic:'messages-square', open: function(a){ openNana(a); } },
+  video:      { name:'밀밀동화',        ic:'monitor-play', open: function(a){ openVideo(a); } },
+  sns:        { name:'중얼중얼',        ic:'at-sign', open: function(a){ openSNS(a); } },
+  phone:      { name:'폴더폰 메일함',   ic:'smartphone', open: function(){ openPhone(); } },
+  final:      { name:'최종 선택',       ic:'flag', open: function(){ openFinal(); } },
+  found:      { name:'발견 기록',       ic:'files', open: function(){ openFound(); }, quiet:true, noIcon:true }
 };
 var ICON_ORDER = ['search','mail','record','timeline','checkpoint','memo','hint','nana','video','sns','phone','final'];
 E.open = function(id, arg){
-  if (!S.apps[id] && !(APPS[id] && APPS[id].noIcon)) { toast('아직 열 수 없습니다', '이 앱은 아직 잠겨 있습니다.', 'bad'); return; }
+  if (!S.apps[id] && !(APPS[id] && APPS[id].noIcon)) { toast('아직 열 수 없습니다', '이 앱은 아직 잠겨 있습니다', 'bad'); return; }
   if (S.newApps[id]) { delete S.newApps[id]; renderIcons(); save(); }
   APPS[id].open(arg);
 };
@@ -333,16 +334,16 @@ function renderIcons(){
   var box = $('#icons'); if (!box) return; box.innerHTML = '';
   ICON_ORDER.forEach(function(id){
     if (!S.apps[id]) return;
-    var a = APPS[id], badge = null;
-    if (id === 'mail') { var u = S.mails.filter(function(m){ return !S.mailRead[m.id]; }).length; if (u) badge = h('span', { class:'badge' }, String(u)); }
-    box.appendChild(h('button', { class:'icon' + (S.newApps[id] ? ' new' : ''), onclick:function(){ E.open(id); } },
-      h('div', { class:'ic', style:'background:' + a.color }, a.ic), h('div', { class:'lb' }, a.name), badge));
+    var a = APPS[id], cnt = null, mark = !!S.newApps[id];
+    if (id === 'mail') { var u = S.mails.filter(function(m){ return !S.mailRead[m.id]; }).length; if (u) { cnt = h('span', { class:'cnt' }, String(u)); mark = true; } }
+    box.appendChild(h('button', { class:'icon', 'aria-label': a.name, onclick:function(){ E.open(id); } },
+      h('span', { class:'ic', html: ico(a.ic) }), h('span', { class:'lb' }, a.name, cnt), mark ? h('span', { class:'dot' }) : null));
   });
 }
 function updateFound(){
   var n = 0; for (var k in S.seen) n++;
   var hs = Object.keys(S.hidden).length;
-  $('#tb-found').textContent = '발견 페이지 ' + n + '/' + IDX.total + (S.chapter >= 1 || hs ? ' · ★' + hs + '/' + IDX.hiddenTotal : '');
+  $('#tb-found').textContent = '발견 ' + n + '/' + IDX.total + (S.chapter >= 1 || hs ? ' · 숨은 기록 ' + hs + '/' + IDX.hiddenTotal : '');
   refreshWin('found');
 }
 function tickClock(){
@@ -367,12 +368,12 @@ function bindLinks(root){
   $$('figure.photo', root).forEach(function(f){ f.addEventListener('click', function(){ openPhoto(f.getAttribute('data-scene'), f.getAttribute('data-cap')); }); });
   $$('[data-page]', root).forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openSearch({ page: a.getAttribute('data-page') }); }); });
   $$('[data-sns]', root).forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); var p = a.getAttribute('data-sns').split(':'); gotoSNS(p[0], p[1]); }); });
-  $$('[data-thread]', root).forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); if (!S.apps.nana) { toast('아직 열 수 없습니다', '나나채널 앱이 잠겨 있습니다.', 'bad'); return; } E.open('nana', { thread: a.getAttribute('data-thread') }); }); });
+  $$('[data-thread]', root).forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); if (!S.apps.nana) { toast('아직 열 수 없습니다', '나나채널 앱이 잠겨 있습니다', 'bad'); return; } E.open('nana', { thread: a.getAttribute('data-thread') }); }); });
   $$('[data-app]', root).forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); E.open(a.getAttribute('data-app')); }); });
 }
 function gotoSNS(era, id){
-  if (!S.apps.sns) { toast('아직 열 수 없습니다', '중얼중얼 앱이 아직 잠겨 있습니다.', 'bad'); return; }
-  if (era === '2026' && !S.flags.sns2026) { toast('아직 열 수 없습니다', '중얼중얼 2026 탭이 아직 잠겨 있습니다.', 'bad'); return; }
+  if (!S.apps.sns) { toast('아직 열 수 없습니다', '중얼중얼 앱이 아직 잠겨 있습니다', 'bad'); return; }
+  if (era === '2026' && !S.flags.sns2026) { toast('아직 열 수 없습니다', '중얼중얼 2026 탭이 아직 잠겨 있습니다', 'bad'); return; }
   E.open('sns', { era: era, acc: id });
 }
 
@@ -382,7 +383,7 @@ function openPhoto(scene, cap){
   W.body.innerHTML = '';
   var st = W.st = { z: 1, x: 0, y: 0 };
   var stage = h('div', { class:'pv-stage' });
-  var label = h('span', null, '×1');
+  var label = h('span', { class:'z' }, '×1');
   function apply(){ var svg = stage.querySelector('svg'); if (svg) svg.style.transform = 'translate(' + st.x + 'px,' + st.y + 'px) scale(' + st.z + ')'; label.textContent = '×' + st.z.toFixed(1).replace('.0', ''); }
   function zoom(f, cx, cy){
     var nz = Math.max(1, Math.min(8, st.z * f));
@@ -391,9 +392,10 @@ function openPhoto(scene, cap){
     if (st.z === 1) { st.x = 0; st.y = 0; } apply();
   }
   var tools = h('div', { class:'pv-tools' },
-    h('button', { onclick:function(){ zoom(1/1.5); } }, '－ 축소'), h('button', { onclick:function(){ zoom(1.5); } }, '＋ 확대'),
-    h('button', { onclick:function(){ st.z = 1; st.x = 0; st.y = 0; apply(); } }, '원래대로'), label,
-    h('span', { class:'muted', style:'margin-left:auto;color:#999' }, '끌어서 이동 · 휠로 확대'));
+    h('button', { class:'btn ghost icon-only', title:'축소', 'aria-label':'축소', html: ico('minus'), onclick:function(){ zoom(1/1.5); } }),
+    h('button', { class:'btn ghost icon-only', title:'확대', 'aria-label':'확대', html: ico('plus'), onclick:function(){ zoom(1.5); } }),
+    h('button', { class:'btn ghost icon-only', title:'원래대로', 'aria-label':'원래대로', html: ico('rotate-ccw'), onclick:function(){ st.z = 1; st.x = 0; st.y = 0; apply(); } }), label,
+    h('span', { style:'margin-left:auto' }, '끌어서 이동, 휠로 확대'));
   var capEl = h('div', { class:'pv-cap', html: cap || '' });
   W.body.appendChild(h('div', { class:'pv' }, tools, stage, capEl));
   stage.innerHTML = sceneSVG(scene);
@@ -419,14 +421,17 @@ function openSearch(arg){
 function buildSearch(W){
   W.st = { tab:'web', view:'home', back:[] };
   var inp = h('input', { class:'inp', placeholder:'한 단어로 검색', 'aria-label':'검색어', autocomplete:'off', enterkeyhint:'search' });
-  var form = h('form', { class:'srch-form', onsubmit:function(e){ e.preventDefault(); runSearch(W, inp.value); } }, inp, h('button', { class:'btn pri', type:'submit' }, '검색'));
+  var form = h('form', { class:'srch-form', onsubmit:function(e){ e.preventDefault(); runSearch(W, inp.value); } }, h('span', { html: ico('search') }), inp, h('button', { class:'btn pri', type:'submit' }, '검색'));
   function tb(k, label){ return h('button', { class: W.st.tab === k ? 'on' : '', 'data-tab': k, onclick:function(){ setTab(W, k); } }, label); }
   var tabs = h('div', { class:'srch-tabs' }, tb('web', '웹'), tb('arch', '아카이브'));
-  var top = h('div', { class:'srch-top' }, h('div', { class:'srch-logo', html:'메아리<span>.</span>' }), form, tabs);
+  var top = h('div', { class:'srch-top' }, h('div', { class:'srch-logo' }, '메아리'), form, tabs);
   var main = h('div', { class:'srch-main' });
   W.body.innerHTML = '';
   W.body.appendChild(h('div', { class:'srch' }, top, main));
   W.st.inp = inp; W.st.main = main; W.st.tabsEl = tabs;
+  var setTop = function(){ W.body.style.setProperty('--srch-top', top.offsetHeight + 'px'); };
+  setTimeout(setTop, 0);
+  if (window.ResizeObserver) { try { new ResizeObserver(setTop).observe(top); } catch (e) {} }
   searchHome(W);
 }
 function setTab(W, k){
@@ -440,11 +445,11 @@ function searchHome(W){
   var arch = W.st.tab === 'arch';
   W.st.main.innerHTML = '';
   W.st.main.appendChild(h('div', { class:'srch-home' },
-    h('div', { class:'big', html: arch ? '아카이브<span>.</span>' : '메아리<span>.</span>' }),
-    h('p', { class:'muted' }, arch ? '지워진 페이지의 보관본을 찾습니다.' : '정확한 한 단어만 메아리가 되어 돌아옵니다.'),
-    h('p', { class:'small muted', html: arch
-      ? '• <b>페이지 주소</b>(앞의 http:// 는 빼도 됩니다)나 <b>게시글 ID</b>를 입력하세요.<br>• 웹 검색에서 「삭제된 페이지」로 나온 주소를 여기에 넣어 보세요.'
-      : '• 띄어쓰기 없이 <b>한 단어</b>만 검색됩니다. 인물 이름은 붙여 쓰세요. (예: 홍길동 → 홍길동)<br>• 영문 아이디는 대소문자를 가리지 않습니다.<br>• 결과가 없으면 「검색 결과 0건」. 단어를 바꿔 보세요.' })));
+    h('div', { class:'big' }, arch ? '아카이브' : '메아리'),
+    h('p', null, arch ? '지워진 페이지의 보관본을 찾습니다' : '정확한 한 단어만 메아리가 되어 돌아옵니다'),
+    h('p', { class:'tips', html: arch
+      ? '<b>페이지 주소</b>나 <b>게시글 ID</b>를 넣으세요. 주소 앞의 http:// 는 빼도 됩니다. 웹 검색에서 「삭제된 페이지」로 나온 주소를 여기에 넣어 보세요.'
+      : '띄어쓰기 없이 <b>한 단어</b>만 검색됩니다. 인물 이름은 붙여 쓰고, 영문 아이디는 대소문자를 가리지 않습니다. 결과가 없으면 단어를 바꿔 보세요.' })));
 }
 function runSearch(W, q){
   var raw = String(q || '').trim(); if (!raw) return;
@@ -492,7 +497,7 @@ function renderResults(W, res, raw){
   res.forEach(function(p){
     var seen = S.seen['page:' + p.id];
     var tags = [h('span', { class:'tag' }, p.archive ? '아카이브' : (TYPE_LABEL[p.type] || '웹'))];
-    if (p.archive && p.hidden && S.hidden[p.id]) tags.push(h('span', { class:'tag star-tag' }, '★'));
+    if (p.archive && p.hidden && S.hidden[p.id]) tags.push(h('span', { class:'tag' }, '숨은 기록'));
     var it = h('div', { class:'r-item' + (p.type === 'dead' ? ' dead' : '') + (seen ? ' seen' : '') },
       h('div', { class:'r-url' }, p.url || ''),
       h('a', { class:'r-title', onclick:function(){ showPage(W, p.id, true); } }, p.title),
@@ -511,9 +516,9 @@ function showPage(W, id, push){
   fx(p.fx);
   var main = W.st.main; main.innerHTML = '';
   var nav = h('div', { class:'page-nav' },
-    h('button', { class:'btn', onclick:function(){ goBack(W); } }, '← 뒤로'),
+    h('button', { class:'btn ghost', html: ico('arrow-left') + '<span>뒤로</span>', onclick:function(){ goBack(W); } }),
     h('div', { class:'addr', title: p.url }, (p.archive ? '보관본 · ' : '') + (p.url || '')));
-  var holder = h('div', { html: pageHTML(p) });
+  var holder = h('div', { class:'webpage', html: pageHTML(p) });
   main.appendChild(nav); main.appendChild(holder);
   if (p.lock) holder.appendChild(lockBox(p));
   if (p.endBtn && S.flags.ending_true) {
@@ -561,7 +566,7 @@ function lockBox(p){
     } else { fb.textContent = '비밀번호가 다릅니다.'; fb.style.color = '#e0475b'; sfx('bad'); }
   }
   inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') tryIt(); });
-  box.appendChild(h('div', null, h('b', null, '🔒 보호된 글입니다'), h('p', { class:'small muted' }, p.lock.hint || '비밀번호를 입력하세요.'), inp, ' ', h('button', { class:'btn pri', onclick: tryIt }, '열기'), fb));
+  box.appendChild(h('div', null, h('b', { class:'lk', html: ico('lock') + '보호된 글입니다' }), h('p', { class:'small muted' }, p.lock.hint || '비밀번호를 입력하세요.'), inp, ' ', h('button', { class:'btn pri', onclick: tryIt }, '열기'), fb));
   return box;
 }
 
@@ -594,17 +599,17 @@ function renderMail(W){
     var hdr = '보낸 사람: ' + esc(m.fromName) + ' &lt;' + esc(m.from) + '&gt;<br>받는 사람: ' + esc(m.to || 'k3ngai@hotline.example') + '<br>날짜: ' + esc(m.date || (rec && rec.at) || '');
     if (W.st.full) hdr += (m.headers || []).map(function(x){ return '<br>' + esc(x); }).join('');
     var hdrEl = h('div', { class:'mail-hdr', html: hdr });
-    var tog = h('button', { class:'btn small', style:'margin-top:6px', onclick:function(){ W.st.full = !W.st.full; renderMail(W); } }, W.st.full ? '헤더 간단히' : '헤더 전체 보기');
+    var tog = h('button', { class:'btn mail-tog', onclick:function(){ W.st.full = !W.st.full; renderMail(W); } }, W.st.full ? '헤더 간단히' : '헤더 전체 보기');
     var body = h('div', { class:'mail-body', html: markup(m.body) });
-    var at = h('div', { style:'margin-top:14px' });
+    var at = h('div');
     (m.attach || []).forEach(function(a){
-      at.appendChild(h('span', { class:'attach', onclick:function(){
+      at.appendChild(h('button', { class:'btn attach', html: ico(a.type === 'photo' ? 'image' : 'paperclip') + '<span>' + esc(a.name) + '</span>', onclick:function(){
         if (a.type === 'photo') openPhoto(a.scene, a.cap);
         else if (a.type === 'app') E.open(a.app);
-      } }, a.type === 'photo' ? '🖼' : '📎', ' ', a.name));
+      } }));
     });
     view.appendChild(h('h2', null, m.subject)); view.appendChild(hdrEl); view.appendChild(tog); view.appendChild(body);
-    if ((m.attach || []).length) { view.appendChild(h('div', { class:'small muted', style:'margin-top:14px' }, '첨부 파일')); view.appendChild(at); }
+    if ((m.attach || []).length) { view.appendChild(h('div', { class:'mail-att-h' }, '첨부 파일')); view.appendChild(at); }
     bindLinks(view);
   } else view.appendChild(h('div', { class:'empty' }, '메일을 선택하세요.'));
   W.body.appendChild(h('div', { class:'mail' }, list, view));
@@ -623,23 +628,22 @@ function renderRecord(W){
   var keepScroll = W.body.scrollTop;
   W.body.innerHTML = '';
   var total = IDX.peopleList.length, cc = confCount();
-  var rule = h('div', { class:'rec-rule', html:
-    '<b>달성 조건</b> 한 인물의 모든 칸이 맞으면 「정리됨」. <b>3명 단위로만 확정 알림</b> — 맞은 인물이 3명 모일 때마다 그 3명이 한꺼번에 확정되고 잠깁니다. ' +
-    '어느 칸이 틀렸는지는 알려주지 않습니다. 남은 인물이 3명보다 적으면 남은 전원이 맞을 때 확정됩니다. 「기록 대조」는 10초에 한 번 할 수 있습니다.' });
-  var prog = h('div', { class:'rec-prog' }, h('span', null, '정리됨 ' + cc + '/' + total), h('div', { class:'bar' }, h('i', { style:'width:' + (cc / total * 100) + '%' })));
-  var chkBtn = h('button', { class:'btn pri', style:'padding:4px 12px' }, '기록 대조');
-  var fb = h('span', { class:'small', style:'color:#ffd76a' });
+  var chkBtn = h('button', { class:'btn pri' }, '기록 대조');
+  var fb = h('div', { class:'rec-fb' });
+  var head = h('div', { class:'rec-head' },
+    h('div', { class:'rec-row' }, h('h3', null, '달성 조건'), h('span', { class:'num', html: '정리됨 <b>' + cc + '</b>/' + total }), chkBtn),
+    h('div', { class:'rec-bar' }, h('i', { style:'transform:scaleX(' + (cc / total) + ')' })),
+    h('p', { class:'rec-rule' }, '한 사람의 네 칸이 모두 맞으면 「정리됨」이 됩니다. 3명 단위로만 확정을 알립니다. 맞은 사람이 3명 모일 때마다 그 3명이 한꺼번에 확정되고 잠기며, 어느 칸이 틀렸는지는 알려 주지 않습니다. 남은 사람이 3명보다 적으면 남은 전원이 맞을 때 확정됩니다. 「기록 대조」는 10초에 한 번 할 수 있습니다.'),
+    fb);
   chkBtn.addEventListener('click', function(){
     var now = Date.now();
-    if (now - (S.lastCheck || 0) < 10000) { fb.textContent = '잠시 후 다시 대조할 수 있습니다. (' + Math.ceil((10000 - (now - S.lastCheck)) / 1000) + '초)'; return; }
+    if (now - (S.lastCheck || 0) < 10000) { fb.textContent = Math.ceil((10000 - (now - S.lastCheck)) / 1000) + '초 뒤에 다시 대조할 수 있습니다'; return; }
     S.lastCheck = now; S.recTries++;
     var r = recCheck();
-    if (r) fb.textContent = r; else { fb.textContent = '아직 확정할 수 있는 묶음이 없습니다.'; sfx('bad'); }
+    if (r) fb.textContent = r; else { fb.textContent = '아직 확정할 수 있는 묶음이 없습니다'; sfx('bad'); }
     save();
   });
-  prog.appendChild(chkBtn); prog.appendChild(fb);
-  rule.appendChild(prog);
-  W.body.appendChild(rule);
+  W.body.appendChild(head);
   var grid = h('div', { class:'rec-grid' });
   var shown = 0;
   IDX.peopleList.forEach(function(p){
@@ -647,7 +651,7 @@ function renderRecord(W){
     var r = S.rec[p.id] || (S.rec[p.id] = { n:'', s:-1, w:-1, r:-1 });
     var locked = !!S.conf[p.id];
     function sel(key, opts, label){
-      var s = h('select', { disabled: locked }, h('option', { value:'-1' }, '— ' + label + ' —'));
+      var s = h('select', { class:'inp', disabled: locked }, h('option', { value:'-1' }, label));
       opts.forEach(function(o, i){ s.appendChild(h('option', { value: String(i), selected: r[key] === i }, o)); });
       s.addEventListener('change', function(){ r[key] = +s.value; save(); });
       return s;
@@ -657,8 +661,8 @@ function renderRecord(W){
     grid.appendChild(h('div', { class:'card' + (locked ? ' locked' : '') },
       h('span', { class:'c-st' }, locked ? '정리됨' : '미정리'),
       h('div', { class:'c-label' }, p.label),
-      h('div', { class:'c-handle' }, p.handle),
-      h('div', { class:'small muted' }, p.desc),
+      h('div', { class:'c-handle' + (locked ? ' redline' : '') }, p.handle),
+      h('div', { class:'c-desc' }, p.desc),
       h('label', null, '이름'), nameInp,
       h('label', null, '현재 상태'), sel('s', D.options.status, '선택'),
       h('label', null, '2009년 8월 15일 밤 행적'), sel('w', D.options.where, '선택'),
@@ -668,11 +672,11 @@ function renderRecord(W){
   W.body.appendChild(grid);
   var fin = h('div', { class:'rec-final' });
   if (cc >= total && S.chapter >= IDX.chapters.length - 1) {
-    fin.appendChild(h('button', { class:'btn pri', style:'font-size:16px;padding:10px 22px', onclick:function(){ unlockApp('final'); E.open('final'); } }, '기록부 최종 제출 →'));
+    fin.appendChild(h('button', { class:'btn pri lg', onclick:function(){ unlockApp('final'); E.open('final'); } }, '기록부 최종 제출'));
   } else if (cc >= total) {
-    fin.appendChild(h('p', { class:'small muted' }, '모든 인물이 정리되었습니다. 이야기의 끝(종장)에서 최종 제출이 열립니다.'));
+    fin.appendChild(h('p', null, '모든 인물이 정리되었습니다. 이야기의 끝(종장)에서 최종 제출이 열립니다.'));
   } else {
-    fin.appendChild(h('p', { class:'small muted' }, '종장에서 8명 전원이 「정리됨」이 되면 최종 제출이 열립니다. 인물 카드는 관련 페이지를 처음 발견할 때 추가됩니다. (현재 ' + shown + '/' + total + '명)'));
+    fin.appendChild(h('p', null, '종장에서 8명 전원이 「정리됨」이 되면 최종 제출이 열립니다. 인물 카드는 관련 페이지를 처음 발견할 때 추가됩니다. 지금 ' + shown + '/' + total + '명'));
   }
   W.body.appendChild(fin);
   W.body.scrollTop = keepScroll;
@@ -692,11 +696,11 @@ function recCheck(){
   if (!batch) return null;
   batch.forEach(function(p){ S.conf[p.id] = true; });
   var names = batch.map(function(p){ return p.handle; }).join(', ');
-  toast('기록 확정', names + ' — ' + batch.length + '명이 「정리됨」으로 확정되었습니다.', 'good');
+  toast('기록 확정', names + ' — ' + batch.length + '명이 「정리됨」으로 확정되었습니다', 'good');
   sfx('unlock'); save();
   setTimeout(function(){ refreshWin('record'); }, 50);
   if (confCount() >= IDX.peopleList.length && S.chapter >= IDX.chapters.length - 1) { unlockApp('final'); }
-  return batch.length + '명 확정!';
+  return batch.length + '명이 확정되었습니다';
 }
 
 /* ============================================================
@@ -711,7 +715,7 @@ function renderTimeline(W){
   var st = W.body.scrollTop;
   W.body.innerHTML = '';
   var items = Object.keys(S.tl).map(function(k){ return IDX.tl[k]; }).filter(Boolean).sort(function(a, b){ return a.t < b.t ? -1 : a.t > b.t ? 1 : 0; });
-  var box = h('div', { class:'tl' }, h('p', { class:'small muted' }, '발견한 사건이 시간순으로 자동 정렬됩니다. 각 카드 아래에 메모를 남길 수 있습니다.'));
+  var box = h('div', { class:'tl' }, h('p', { class:'tl-help' }, '발견한 사건이 시간순으로 자동 정렬됩니다. 각 카드 아래에 메모를 남길 수 있습니다.'));
   if (!items.length) box.appendChild(h('div', { class:'empty' }, '아직 기록된 사건이 없습니다.'));
   var yr = '';
   items.forEach(function(t){
@@ -750,7 +754,7 @@ function renderCP(W){
   var box = h('div', { class:'cp' });
   for (var i = 0; i < S.chapter; i++) {
     var pc = IDX.chapters[i];
-    if (pc.checkpoint) box.appendChild(h('div', { class:'cp-past' }, '✔ ' + pc.num + ' 「' + pc.title + '」 — 정리 완료'));
+    if (pc.checkpoint) box.appendChild(h('div', { class:'cp-past', html: ico('check') + '<span>' + esc(pc.num + ' 「' + pc.title + '」 정리 완료') + '</span>' }));
   }
   var ch = IDX.chapters[S.chapter];
   box.appendChild(h('h3', null, ch.num + ' 「' + ch.title + '」'));
@@ -758,7 +762,7 @@ function renderCP(W){
     box.appendChild(h('p', { class:'muted', html: ch.cpNote || '' }));
     W.body.appendChild(box); return;
   }
-  box.appendChild(h('p', { class:'small muted' }, '빈칸을 채워 문장을 완성하세요. 틀리면 몇 칸이 맞았는지만 알려줍니다. 띄어쓰기와 대소문자는 상관없습니다.'));
+  box.appendChild(h('p', { class:'cp-help' }, '빈칸을 채워 문장을 완성하세요. 틀리면 몇 칸이 맞았는지만 알려줍니다. 띄어쓰기와 대소문자는 상관없습니다.'));
   ch.checkpoint.sentences.forEach(function(sn){
     var done = !!S.cp[sn.id];
     var sent = h('div', { class:'cp-sent' + (done ? ' done' : '') });
@@ -778,7 +782,7 @@ function renderCP(W){
       inputs.push({ el: el, pt: pt }); bi++;
       sent.appendChild(el);
     });
-    var fb = h('div', { class:'cp-fb' + (done ? ' good' : '') }, done ? '✔ 정답' : '');
+    var fb = h('div', { class:'cp-fb' + (done ? ' good' : '') }, done ? '정답' : '');
     var btn = h('button', { class:'btn pri', disabled: done }, '확인');
     function check(){
       if (btn.disabled) return;
@@ -786,7 +790,7 @@ function renderCP(W){
       inputs.forEach(function(x){ var v = x.el.value; vals.push(v); if (v && x.pt.ans.indexOf(H(v)) >= 0) ok++; });
       if (ok === inputs.length) {
         S.cp[sn.id] = true; S.cpVals[sn.id] = vals; sfx('good'); save();
-        fb.className = 'cp-fb good'; fb.textContent = '✔ 정답';
+        fb.className = 'cp-fb good'; fb.textContent = '정답';
         afterCP(ch); renderCP(W);
       } else {
         fb.className = 'cp-fb bad'; fb.textContent = inputs.length + '칸 중 ' + ok + '칸 정답'; sfx('bad');
@@ -794,10 +798,10 @@ function renderCP(W){
       }
     }
     btn.addEventListener('click', check);
-    sent.appendChild(h('div', null, btn, fb));
+    sent.appendChild(h('div', { class:'cp-act' }, btn, fb));
     box.appendChild(sent);
   });
-  if (ch.checkpoint.sentences.every(function(sn){ return S.cp[sn.id]; }) && ch.cpAfter) box.appendChild(h('p', { class:'small', html: ch.cpAfter }));
+  if (ch.checkpoint.sentences.every(function(sn){ return S.cp[sn.id]; }) && ch.cpAfter) box.appendChild(h('p', { class:'cp-after', html: ch.cpAfter }));
   W.body.appendChild(box);
 }
 function afterCP(ch){
@@ -825,13 +829,13 @@ function renderHint(W){
   var tabs = h('div', { class:'tabs' },
     h('button', { class: W.st.tab === 'ch' ? 'on' : '', onclick:function(){ W.st.tab = 'ch'; renderHint(W); } }, '추리 문제'),
     h('button', { class: W.st.tab === 'pp' ? 'on' : '', onclick:function(){ W.st.tab = 'pp'; renderHint(W); } }, '기록부 인물'));
-  var sec = h('div', { class:'hint-sec' }, h('p', { class:'small muted' }, '힌트는 3단계입니다: ① 방향 → ② 어디를 볼지 → ③ 거의 정답. 열어 본 횟수는 엔딩에 기록됩니다. (지금까지 ' + S.hints + '회)'));
+  var sec = h('div', { class:'hint-sec' }, h('p', { class:'h-help' }, '힌트는 3단계입니다. 방향, 어디를 볼지, 거의 정답 순서로 열립니다. 열어 본 횟수는 엔딩에 기록됩니다. (지금까지 ' + S.hints + '회)'));
   function item(key, q, hs){
     var lv = S.hintOpen[key] || 0;
     var row = h('div', { class:'hint-item' }, h('div', { class:'hq' }, q));
     var bl = h('div', { class:'hl' });
-    ['① 방향', '② 어디를', '③ 거의 정답'].forEach(function(lb, i){
-      bl.appendChild(h('button', { class:'btn', disabled: i !== lv, onclick:function(){ S.hintOpen[key] = i + 1; S.hints++; save(); renderHint(W); } }, lv > i ? lb + ' ✓' : lb));
+    ['1단계 방향', '2단계 어디를', '3단계 거의 정답'].forEach(function(lb, i){
+      bl.appendChild(h('button', { class:'btn' + (lv > i ? ' done' : ''), disabled: i !== lv, html: (lv > i ? ico('check') : '') + '<span>' + lb + '</span>', onclick:function(){ S.hintOpen[key] = i + 1; S.hints++; save(); renderHint(W); } }));
     });
     row.appendChild(bl);
     for (var i = 0; i < lv; i++) { var tx = hs[i]; try { tx = decStr(hs[i], 'kengai-hint'); } catch (e) {} row.appendChild(h('div', { class:'ht', html: tx })); }
@@ -869,11 +873,11 @@ function renderFound(W){
   W.body.innerHTML = '';
   var n = S.seenOrder.length, hs = Object.keys(S.hidden).length;
   var box = h('div', { class:'found-list' },
-    h('p', null, h('b', null, '발견 페이지 ' + n + '/' + IDX.total), '  ·  숨겨진 아카이브 단서 ★ ' + hs + '/' + IDX.hiddenTotal),
-    h('p', { class:'small muted' }, '지금까지 연 모든 페이지입니다. 누르면 바로 이동합니다. (최근 순)'));
+    h('div', { class:'found-head', html: '발견 페이지 <span class="num">' + n + '/' + IDX.total + '</span> · 숨은 기록 <span class="num">' + hs + '/' + IDX.hiddenTotal + '</span>' }),
+    h('p', { class:'found-help' }, '지금까지 연 모든 페이지입니다. 누르면 바로 이동합니다. (최근 순)'));
   S.seenOrder.slice().reverse().forEach(function(e){
-    var star = e.k === 'page' && IDX.pages[e.id] && IDX.pages[e.id].hidden ? '★ ' : '';
-    box.appendChild(h('div', { class:'found-row', onclick:function(){ gotoFound(e); } }, h('span', { class:'k' }, KIND_LABEL[e.k] || e.k), h('span', { class:'t' }, star + e.title)));
+    var star = e.k === 'page' && IDX.pages[e.id] && IDX.pages[e.id].hidden;
+    box.appendChild(h('div', { class:'found-row', onclick:function(){ gotoFound(e); } }, h('span', { class:'k' }, KIND_LABEL[e.k] || e.k), h('span', { class:'t' }, star ? h('span', { class:'dot', title:'숨은 기록' }) : null, e.title)));
   });
   W.body.appendChild(box);
 }
@@ -926,7 +930,7 @@ function renderNanaLogin(W){
   function go(){
     if (H(inp.value) === g.tripKey) {
       S.flags.nana_login = true; sfx('unlock'); save();
-      toast('로그인 성공', '◆K3nGai — 17년 만의 로그인입니다.', 'good');
+      toast('로그인 성공', '◆K3nGai — 17년 만의 로그인입니다', 'good');
       renderNana(W);
       if (S.chapter === 0) setTimeout(function(){ startChapter(1); }, 1200);
     } else { fb.textContent = '트립 키가 일치하지 않습니다.'; sfx('bad'); }
@@ -1166,8 +1170,8 @@ function renderSNS(W){
   W.body.innerHTML = '';
   var root = h('div', { class:'sns ' + (era === '2009' ? 'e09' : 'e26') });
   function eraBtn(e){ return h('button', { class: era === e ? 'on' : '', onclick:function(){
-    if (e === '2026' && !S.flags.sns2026) { toast('아직 열 수 없습니다', '2026 현재 탭은 아직 잠겨 있습니다.', 'bad'); return; }
-    snsGo(W, { era: e, view: 'home' }); } }, e === '2009' ? '2009 아카이브' : '2026 현재' + (S.flags.sns2026 ? '' : ' 🔒')); }
+    if (e === '2026' && !S.flags.sns2026) { toast('아직 열 수 없습니다', '2026 현재 탭은 아직 잠겨 있습니다', 'bad'); return; }
+    snsGo(W, { era: e, view: 'home' }); } }, e === '2009' ? '2009 아카이브' : '2026 현재'); }
   var inp = h('input', { class:'inp', placeholder:'@아이디 또는 #해시태그', autocomplete:'off' });
   var form = h('form', { class:'sns-form', onsubmit:function(e){ e.preventDefault(); snsSearch(W, inp.value); } }, inp, h('button', { class:'btn', type:'submit' }, '찾기'));
   var back = h('button', { class:'btn', onclick:function(){ var p = st.hist.pop(); if (p) { for (var k in p) st[k] = p[k]; renderSNS(W); } } }, '←');
@@ -1175,7 +1179,7 @@ function renderSNS(W){
   var body = h('div', { class:'sns-body' });
   if (st.view === 'prof') renderProfile(W, body);
   else if (st.view === 'tag') renderTag(W, body);
-  else if (st.view === 'none') body.appendChild(h('div', { class:'srch-zero' }, h('div', { class:'z', html:'검색 결과 <em>0</em>건' }), h('p', null, '「' + (st.q || '') + '」 — @아이디나 #해시태그를 정확히 입력하세요.')));
+  else if (st.view === 'none') body.appendChild(h('div', { class:'sns-zero' }, h('div', { class:'z', html:'검색 결과 <em>0</em>건' }), h('p', null, '「' + (st.q || '') + '」 — @아이디나 #해시태그를 정확히 입력하세요.')));
   else {
     var hm = D.sns['home' + era];
     body.appendChild(h('div', { class:'sns-home', html: hm.text }));
@@ -1227,7 +1231,7 @@ function postEl(W, p, isReply){
 function bindSNS(W, root){
   root.addEventListener('click', function(e){
     var m = e.target.closest('[data-acc]');
-    if (m) { var id = m.getAttribute('data-acc'); if (acc(W.st.era, id)) snsGo(W, { view:'prof', acc: id, sub:'posts' }); else toast('계정을 찾을 수 없습니다', '@' + id + ' — 탈퇴했거나 이 시기의 기록이 없습니다.', 'bad'); return; }
+    if (m) { var id = m.getAttribute('data-acc'); if (acc(W.st.era, id)) snsGo(W, { view:'prof', acc: id, sub:'posts' }); else toast('계정을 찾을 수 없습니다', '@' + id + ' — 탈퇴했거나 이 시기의 기록이 없습니다', 'bad'); return; }
     var t = e.target.closest('[data-tag]');
     if (t) { snsGo(W, { view:'tag', tag: t.getAttribute('data-tag') }); return; }
     var ac2 = e.target.closest('.acc-row');
@@ -1240,9 +1244,9 @@ function renderProfile(W, body){
   if (!a) { body.appendChild(h('div', { class:'empty' }, '이 계정은 존재하지 않습니다.')); return; }
   discover('acc', st.era + ':' + a.id, a.name + ' (@' + a.id + ') · ' + st.era);
   fx(a.fx);
-  var prof = h('div', { class:'sns-prof' }, avatar(a), h('div', { class:'pn' }, a.name, a.verified ? ' ✔' : '', a.locked ? ' 🔒' : ''), h('div', { class:'pid' }, '@' + a.id),
+  var prof = h('div', { class:'sns-prof' }, avatar(a), h('div', { class:'pn', html: esc(a.name) + (a.verified ? ico('badge-check') : '') + (a.locked ? ico('lock') : '') }), h('div', { class:'pid' }, '@' + a.id),
     h('div', { class:'pb', html: linkify(a.bio || '') }),
-    h('div', { class:'pm' }, (a.loc ? '📍 ' + a.loc + '  ' : '') + '가입: ' + (a.joined || '?')),
+    h('div', { class:'pm', html: (a.loc ? ico('map-pin') + esc(a.loc) + '&nbsp;&nbsp;' : '') + '가입: ' + esc(a.joined || '?') }),
     h('div', { class:'pf' }, h('a', { onclick:function(){ st.sub = 'following'; renderSNS(W); } }, h('b', null, String(a.fwingCount != null ? a.fwingCount : (a.following || []).length)), ' 팔로잉'),
       h('a', { onclick:function(){ st.sub = 'followers'; renderSNS(W); } }, h('b', null, String(a.fwerCount != null ? a.fwerCount : (a.followers || []).length)), ' 팔로워')));
   body.appendChild(prof);
@@ -1388,8 +1392,8 @@ function openFinal(){
   box.appendChild(h('div', { html: D.finalIntro }));
   D.finalOptions.forEach(function(o){
     var lockedOpt = o.needHidden && hs < IDX.hiddenTotal;
-    var b = h('button', { class:'opt', disabled: lockedOpt }, h('b', null, o.label), h('span', { class:'small' }, o.desc),
-      lockedOpt ? h('div', { class:'small', style:'color:#c0392b;margin-top:6px' }, '숨겨진 아카이브 단서를 모두 모아야 선택할 수 있습니다. (★ ' + hs + '/' + IDX.hiddenTotal + ')') : null);
+    var b = h('button', { class:'opt', disabled: lockedOpt }, h('b', null, o.label), h('span', null, o.desc),
+      lockedOpt ? h('div', { class:'lockn', html: ico('lock') + '<span>숨은 기록을 모두 모아야 고를 수 있습니다. 지금 ' + hs + '/' + IDX.hiddenTotal + '</span>' }) : null);
     b.addEventListener('click', function(){ if (lockedOpt) return; if (!confirm('「' + o.label + '」을(를) 선택합니다. 되돌릴 수 없습니다.')) return; closeWin('final'); runEnding(o.ending); });
     box.appendChild(b);
   });
@@ -1424,10 +1428,10 @@ function endingScreen(key){
   var n = Object.keys(S.seen).length, hs = Object.keys(S.hidden).length;
   var box = $('#ending'); box.classList.remove('hidden'); box.innerHTML = '';
   var report = D.meta.reportTpl.replace('{ending}', en.name).replace('{time}', fmtDur(S.playMs)).replace('{hints}', S.hints).replace('{people}', confCount() + '/' + IDX.peopleList.length).replace('{found}', n + '/' + IDX.total).replace('{star}', hs + '/' + IDX.hiddenTotal);
-  var copyFb = h('div', { class:'small', style:'min-height:18px;margin-top:8px;color:#8fd' });
+  var copyFb = h('div', { class:'e-fb' });
   box.appendChild(h('div', { class:'e-box' },
     h('div', { class:'ov-num' }, '엔딩'),
-    h('div', { class:'e-name' }, '「' + en.name + '」 엔딩'),
+    h('div', { class:'e-name' }, h('span', { class: key === 'correction' ? 'redline' : '' }, en.name), ' 엔딩'),
     h('div', { class:'e-text', html: en.epilogue }),
     h('table', null,
       h('tr', null, h('td', null, '엔딩'), h('td', null, en.name)),
@@ -1435,14 +1439,15 @@ function endingScreen(key){
       h('tr', null, h('td', null, '힌트 사용'), h('td', null, S.hints + '회')),
       h('tr', null, h('td', null, '정리된 인물'), h('td', null, confCount() + '/' + IDX.peopleList.length + '명')),
       h('tr', null, h('td', null, '발견 페이지'), h('td', null, n + '/' + IDX.total)),
-      h('tr', null, h('td', null, '숨겨진 아카이브'), h('td', null, '★ ' + hs + '/' + IDX.hiddenTotal))),
-    h('button', { class:'ov-btn', onclick:function(){ copyText(report, copyFb); } }, '클리어 보고 복사'), ' ',
-    h('button', { class:'ov-btn', onclick:function(){ box.classList.add('hidden'); } }, '데스크톱으로 돌아가기'), ' ',
-    h('button', { class:'ov-btn', onclick:function(){ location.reload(); } }, '타이틀로'),
+      h('tr', null, h('td', null, '숨은 기록'), h('td', null, hs + '/' + IDX.hiddenTotal))),
+    h('div', { class:'e-act' },
+      h('button', { class:'btn lg pri', onclick:function(){ copyText(report, copyFb); } }, '클리어 보고 복사'),
+      h('button', { class:'btn lg', onclick:function(){ box.classList.add('hidden'); } }, '데스크톱으로'),
+      h('button', { class:'btn lg', onclick:function(){ location.reload(); } }, '타이틀로')),
     copyFb));
 }
 function copyText(txt, fb){
-  function ok(){ fb.textContent = '클립보드에 복사했습니다.'; }
+  function ok(){ fb.textContent = '클립보드에 복사했습니다'; }
   function fallback(){
     var ta = h('textarea', { style:'position:fixed;left:-9999px' }); ta.value = txt; document.body.appendChild(ta); ta.select();
     try { document.execCommand('copy'); ok(); } catch (e) { fb.textContent = txt; } ta.remove();
@@ -1456,7 +1461,7 @@ function showOverlay(html, btn, cb){
   overlayOpen = true;
   var o = $('#overlay'), inn = $('#overlay-in');
   inn.innerHTML = html;
-  if (btn) { var b = h('button', { class:'ov-btn' }, btn); b.addEventListener('click', function(){ var f = ovCb; ovCb = null; f ? f() : closeOverlay(); }); inn.appendChild(b); setTimeout(function(){ b.focus(); }, 50); }
+  if (btn) { var b = h('button', { class:'btn ov-btn' }, btn); b.addEventListener('click', function(){ var f = ovCb; ovCb = null; f ? f() : closeOverlay(); }); inn.appendChild(b); setTimeout(function(){ b.focus(); }, 50); }
   ovCb = cb || null;
   o.classList.add('on');
 }
@@ -1490,12 +1495,12 @@ function startGame(fresh){
   running = true;
   var st = $('#sticky');
   if (D.desktop && D.desktop.sticky) { $('#sticky-text').innerHTML = D.desktop.sticky; st.classList.remove('hidden'); }
-  renderIcons(); updateFound(); tickClock();
+  renderIcons(); updateFound(); tickClock(); if (E._setSound) E._setSound();
   setInterval(tickClock, 15000);
   setInterval(function(){ if (running && !document.hidden && S && !S.endDone) { S.playMs += 1000; if (S.playMs % 10000 === 0) saveNow(); } }, 1000);
   if (fresh) startChapter(0);
   else {
-    if (S.ending && S.endDone) toast('엔딩을 본 기록이 있습니다', '「' + D.endings[S.ending].name + '」 · 계속 둘러볼 수 있습니다.');
+    if (S.ending && S.endDone) toast('엔딩을 본 기록이 있습니다', '「' + D.endings[S.ending].name + '」 · 계속 둘러볼 수 있습니다');
     else if (S.ending === 'correction') toast('마지막 한 단어', D.endings.correction.searchHint, 'star');
     else if (S.ending) endingScreen(S.ending);
     else toast('이어하기', IDX.chapters[S.chapter].num + ' 「' + IDX.chapters[S.chapter].title + '」');
@@ -1505,15 +1510,18 @@ E.boot = function(data){
   D = data; index();
   var saved = loadSave();
   var cont = $('#t-continue'), del = $('#t-delete'), nw = $('#t-new');
-  if (saved) { cont.classList.remove('hidden'); del.classList.remove('hidden'); }
+  if (saved) { cont.classList.remove('hidden'); del.classList.remove('hidden'); nw.classList.remove('pri'); }
   cont.addEventListener('click', function(){ ac(); S = Object.assign(newState(), saved); startGame(false); });
   nw.addEventListener('click', function(){
     if (saved && !confirm('처음부터 시작하면 저장된 진행 상황이 지워집니다. 계속할까요?')) return;
     ac(); wipeSave(); S = newState(); saveNow(); startGame(true);
   });
-  del.addEventListener('click', function(){ if (!confirm('저장 데이터를 삭제할까요? 되돌릴 수 없습니다.')) return; wipeSave(); saved = null; cont.classList.add('hidden'); del.classList.add('hidden'); });
+  del.addEventListener('click', function(){ if (!confirm('저장 데이터를 삭제할까요? 되돌릴 수 없습니다.')) return; wipeSave(); saved = null; cont.classList.add('hidden'); del.classList.add('hidden'); nw.classList.add('pri'); });
   $('#tb-found').addEventListener('click', function(){ if (S) E.open('found'); });
-  $('#tb-sound').addEventListener('click', function(){ if (!S) return; S.sound = !S.sound; $('#tb-sound').textContent = S.sound ? '♪' : '♪̸'; $('#tb-sound').style.opacity = S.sound ? 1 : .4; save(); });
+  var setSound = function(){ $('#tb-sound').innerHTML = ico(S && !S.sound ? 'volume-x' : 'volume-2'); };
+  setSound(); $('#tb-start').innerHTML = ico('minimize-2');
+  $('#tb-sound').addEventListener('click', function(){ if (!S) return; S.sound = !S.sound; setSound(); save(); });
+  E._setSound = setSound;
   $('#tb-start').addEventListener('click', function(){ Object.keys(WM.wins).forEach(minWin); });
   window.addEventListener('beforeunload', saveNow);
   document.addEventListener('visibilitychange', function(){ if (document.hidden) saveNow(); });
