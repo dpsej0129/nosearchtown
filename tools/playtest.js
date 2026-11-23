@@ -33,21 +33,29 @@ async function icon(name) {
   try { await p.dblclick(sel, { timeout: 1500 }); } catch (e) { await p.click('#tb-desk'); await p.dblclick(sel); } // 바탕화면 아이콘은 두 번 눌러 연다. 가려져 있으면 「바탕 화면 보기」 후
   await p.waitForTimeout(250);
 }
+async function browser() { if (!(await p.$('.win[data-id=search]'))) await icon('브라우저'); else await focus('search'); }
+// 웹 검색은 주소창에 검색어를 친다. 보관본은 즐겨찾기 「시간창고」를 열고 그 사이트의 검색 칸에 주소를 넣는다.
 async function search(q, arch) {
-  if (!(await p.$('.win[data-id=search]'))) await icon('메아리 검색'); else await focus('search');
-  await click('.win[data-id=search] .srch-tabs button[data-tab=' + (arch ? 'arch' : 'web') + ']');
-  await focus('search'); await p.fill('.win[data-id=search] .srch-form .inp', q);
-  await p.press('.win[data-id=search] .srch-form .inp', 'Enter');
+  await browser();
+  if (arch) {
+    await click('.win[data-id=search] .br-mark:has-text("시간창고")');
+    await focus('search'); await p.fill('.win[data-id=search] .br-view .srch-form .inp', q);
+    await p.press('.win[data-id=search] .br-view .srch-form .inp', 'Enter');
+  } else {
+    await focus('search'); await p.fill('.win[data-id=search] .br-omni', q);
+    await p.press('.win[data-id=search] .br-omni', 'Enter');
+  }
   await p.waitForTimeout(150);
-  return (await p.$$('.win[data-id=search] .r-title')).length;
+  return (await p.$$('.win[data-id=search] .br-view .r-title')).length;
 }
+const back = () => click('.win[data-id=search] .br-back');
 async function searchOpenAll(q, arch, min) {
   const n = await search(q, arch);
   assert(n >= (min || 1), '「' + q + '」 결과 ' + n + '건');
   for (let i = 0; i < n; i++) {
-    await click('.win[data-id=search] .r-title >> nth=' + i);
+    await click('.win[data-id=search] .br-view .r-title >> nth=' + i);
     await p.waitForTimeout(120);
-    await click('.win[data-id=search] .page-nav .btn');
+    await back();
     await p.waitForTimeout(80);
   }
   return n;
@@ -97,7 +105,7 @@ async function wrongCp(vals) {
   // 한 단어 규칙, 0건
   await search('유메 링'); assert(await p.$('text=한 단어만 입력하세요'), '띄어쓰기 안내');
   assert(await search('도리이마코토') === 0, '도리이마코토는 0건이어야 함'); await shot('zero');
-  for (const q of ['유메링', '히나고마을', '유메링실종사건', '특정반', '연호', '도리이민박', '나나채널', '밀밀동화', '권외', '오봉']) await searchOpenAll(q);
+  for (const q of ['유메링', '히나고마을', '유메링살인사건', '특정반', '연호', '도리이민박', '나나채널', '밀밀동화', '권외', '오봉']) await searchOpenAll(q);
   await searchOpenAll('torii-minshuku.jp', true);
   let s = await st(); assert(s.cards.torii, '도리이 카드');
   const fb = await wrongCp(['2009년 8월 15일', '도쿄']); assert(/2칸 중 1칸/.test(fb), '오답 피드백: ' + fb);
@@ -111,7 +119,7 @@ async function wrongCp(vals) {
 
   /* ---------------- 1장 ---------------- */
   log('1장');
-  const threads = ['【밀밀】유메링 실황', 'Part1', 'Part2', 'Part3', 'Part5', '히나고 마을에서'];
+  const threads = ['【밀밀】유메링 실황', 'Part1', 'Part2', 'Part3', 'Part5', '마지막 비명'];
   for (const t of threads) {
     await click('.win[data-id=nana] .nana-head a, .win[data-id=nana] .nh-nav').catch(() => {});
     await p.evaluate(() => {}); await p.waitForTimeout(100);
@@ -128,7 +136,7 @@ async function wrongCp(vals) {
   s = await st(); assert(s.cards.k3ngai && s.cards.hinata && s.cards.haruka, '1장 카드');
   for (const q of ['도시전설하루카', 'k3ngai', 'ID', '트립', '트립도감', '오컬트게시판', '리뷰테러', 'id창고', '히나']) await searchOpenAll(q);
   await search('하루카'); await click('.win[data-id=search] .r-title:has-text("블로그 홈")');
-  for (const t of ['늦은 정정 2', '이 블로그에 대해']) { await click('.win[data-id=search] .ilink:has-text("' + t + '")'); await p.waitForTimeout(100); await click('.win[data-id=search] .page-nav .btn'); }
+  for (const t of ['늦은 정정 2', '이 블로그에 대해']) { await click('.win[data-id=search] .ilink:has-text("' + t + '")'); await p.waitForTimeout(100); await back(); }
   await searchOpenAll('Xa9fQ2', true);
   for (const u of ['sokuho-matome.com/archives/4419', 'http://haruka-toshiden.petit-blog.jp/entry/20090823', 'trip-list.net/hina']) await searchOpenAll(u, true);
   s = await st(); assert(Object.keys(s.hidden).length === 3, '1장 숨김 3개: ' + Object.keys(s.hidden).length);
@@ -139,18 +147,27 @@ async function wrongCp(vals) {
   /* ---------------- 2장 ---------------- */
   log('2장');
   await icon('밀밀동화'); await p.waitForTimeout(300);
-  await focus('video'); await p.fill('.win[data-id=video] .mm-ctrl .inp', '28:02'); await click('.win[data-id=video] .mm-ctrl button:has-text("이동")'); await p.waitForTimeout(300);
-  await focus('video'); await p.fill('.win[data-id=video] .mm-ctrl .inp', '32:15'); await click('.win[data-id=video] .mm-ctrl button:has-text("이동")'); await p.waitForTimeout(400);
-  await shot('video_3215');
+  await click('.win[data-id=video] .mm-chaps button:has-text("공민관")'); await p.waitForTimeout(300);
+  await focus('video'); await p.fill('.win[data-id=video] .mm-ctrl .inp', '07:02'); await click('.win[data-id=video] .mm-ctrl button:has-text("이동")'); await p.waitForTimeout(300);
+  await focus('video'); await p.fill('.win[data-id=video] .mm-ctrl .inp', '09:15'); await click('.win[data-id=video] .mm-ctrl button:has-text("이동")'); await p.waitForTimeout(400);
+  await shot('video_0915');
+  // 「마을 사람」만 모아 보기 → 여섯 개
   await click('.win[data-id=video] .cu[data-u="village"] >> nth=0'); await p.waitForTimeout(200);
+  const vn = await p.locator('.win[data-id=video] .cl .cl-row').count(); assert(vn === 6, '마을 사람 댓글 6개: ' + vn);
+  await shot('video_userfilter');
+  await click('.win[data-id=video] .cl-clear');
+  // 댓글 검색
+  await focus('video'); await p.fill('.win[data-id=video] .cl-q', '권외'); await p.waitForTimeout(150);
+  assert(await p.locator('.win[data-id=video] .cl .cl-row').count() >= 1, '댓글 검색');
+  await click('.win[data-id=video] .cl-clear');
   await click('.win[data-id=video] .mm-ctrl button:has-text("재생")'); await click('.win[data-id=video] .mm-ctrl button:has-text("×16")');
   await p.waitForTimeout(1500); await shot('video_play'); await click('.win[data-id=video] .mm-ctrl button:has-text("일시정지")');
-  await focus('video'); await p.fill('.win[data-id=video] .mm-ctrl .inp', '40:03'); await click('.win[data-id=video] .mm-ctrl button:has-text("이동")');
+  await focus('video'); await p.fill('.win[data-id=video] .mm-ctrl .inp', '12:03'); await click('.win[data-id=video] .mm-ctrl button:has-text("이동")');
   await click('.win[data-id=video] .cu[data-u="774"] >> nth=0'); await p.waitForTimeout(200);
   s = await st(); assert(s.cards.villager, '마을 사람 카드');
   for (const q of ['유선방송', 'ISDN', '공민관', '폐허', '오카베', '815', '마을사람', '8888', '유메링블로그', 'co20721']) await searchOpenAll(q);
   await searchOpenAll('yumering.petit-blog.jp', true); await click('.win[data-id=search] .r-title >> nth=0');
-  for (const t of ['오봉엔 삼촌네 마을', '폴더폰 빨리 치기', '오봉 특집 예고']) { await click('.win[data-id=search] .ilink:has-text("' + t + '")'); await p.waitForTimeout(100); await click('.win[data-id=search] .page-nav .btn'); }
+  for (const t of ['오봉엔 삼촌네 마을', '폴더폰 빨리 치기', '오봉 특집 예고']) { await click('.win[data-id=search] .ilink:has-text("' + t + '")'); await p.waitForTimeout(100); await back(); }
   // 보호 글
   await search('도시전설하루카'); await click('.win[data-id=search] .r-title >> nth=0');
   await click('.win[data-id=search] .ilink:has-text("히나고, 그 사물함")');
@@ -177,13 +194,13 @@ async function wrongCp(vals) {
   await click('.win[data-id=sns] .sns-sub button:has-text("팔로워")'); await p.waitForTimeout(150); await shot('sns_followers');
   for (const q of ['히다사과사이다', '5061412', '마을소식지', '시간표', '목격담', '다카야마역', '도리이사키', '인터넷카페', '오봉축제', '전봇대', '외삼촌']) await searchOpenAll(q);
   await search('마을소식지'); await click('.win[data-id=search] .r-title >> nth=0');
-  for (const t of ['보기']) { await click('.win[data-id=search] .ilink:has-text("' + t + '") >> nth=0'); await p.waitForTimeout(100); await click('.win[data-id=search] .page-nav .btn'); }
+  for (const t of ['보기']) { await click('.win[data-id=search] .ilink:has-text("' + t + '") >> nth=0'); await p.waitForTimeout(100); await back(); }
   await search('도리이사키'); await click('.win[data-id=search] .r-title >> nth=0');
-  for (const t of ['아버지가 떠났다', '그해 여름의 일', '모르는 이름의 꽃']) { await click('.win[data-id=search] .ilink:has-text("' + t + '")'); await p.waitForTimeout(100); await click('.win[data-id=search] .page-nav .btn'); }
+  for (const t of ['아버지가 떠났다', '그해 여름의 일', '모르는 이름의 꽃']) { await click('.win[data-id=search] .ilink:has-text("' + t + '")'); await p.waitForTimeout(100); await back(); }
   await searchOpenAll('cafe-changa.jp', true);
   for (const u of ['mumble.jp/saki_enikki/status/20090816', 'takayama-lib.jp/hinago/128-2', 'cafe-changa.jp/guestbook']) await searchOpenAll(u, true);
   s = await st(); assert(Object.keys(s.hidden).length === 9, '숨김 9개');
-  await cp([['외삼촌', '위장 실종', '스토커를 피하려고']]);
+  await cp([['외삼촌', '위장', '스토커를 피하려고']]);
   await p.waitForTimeout(3500); await dismiss();
   s = await st(); assert(s.chapter === 4 && s.flags.sns2026, '4장 시작');
 
@@ -275,7 +292,7 @@ async function wrongCp(vals) {
   await m.goto(URL); await m.evaluate(s => localStorage.setItem('kengai_save_v1', s), snap); await m.reload();
   await m.click('#t-continue'); await m.click('#lk-in'); await m.waitForTimeout(400);
   await m.screenshot({ path: path.join(OUT, 'mobile_desktop.png') });
-  await m.click('.icon:has-text("메아리 검색")'); await m.fill('.srch-form .inp', '유메링'); await m.press('.srch-form .inp', 'Enter'); await m.waitForTimeout(200);
+  await m.click('.icon:has-text("브라우저")'); await m.fill('.br-view .srch-form .inp', '유메링'); await m.press('.br-view .srch-form .inp', 'Enter'); await m.waitForTimeout(200);
   await m.screenshot({ path: path.join(OUT, 'mobile_search.png') });
   const over = await m.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   assert(!over, '모바일 가로 넘침');

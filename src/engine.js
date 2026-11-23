@@ -312,7 +312,7 @@ function renderTaskbar(){
 
 /* ---------------- 앱 목록 ---------------- */
 var APPS = {
-  search:     { name:'메아리 검색',     ic:'search', open: function(a){ openSearch(a); } },
+  search:     { name:'브라우저',        ic:'globe', open: function(a){ openSearch(a); } },
   mail:       { name:'메일',            ic:'mail', open: function(a){ openMail(a); } },
   record:     { name:'미정리 기록부',   ic:'clipboard-list', open: function(){ openRecord(); } },
   timeline:   { name:'사건 연표',       ic:'history', open: function(){ openTimeline(); } },
@@ -502,129 +502,318 @@ function openPhoto(scene, cap){
 }
 
 /* ============================================================
-   메아리 검색
+   브라우저 — 검색 사이트 「메아리」와 웹 아카이브 「시간창고」
+   탭 · 뒤로/앞으로/새로 고침 · 주소창(주소 또는 검색어) · 즐겨찾기
    ============================================================ */
-function openSearch(arg){
-  var W = openWin('search', '메아리 검색', 900, 640);
-  if (!W.st) buildSearch(W);
-  if (arg && arg.page) showPage(W, arg.page, true);
-  if (arg && arg.focus) setTimeout(function(){ W.st.inp.focus(); }, 50);
+var HOST_MEARI = 'meari.jp', HOST_VAULT = 'sigan-changgo.org';
+var URLMAP = null;
+function urlMap(){
+  if (URLMAP) return URLMAP;
+  URLMAP = {};
+  IDX.pageList.forEach(function(p){ if (!p.archive && p.url && !p.requires) URLMAP[norm(p.url)] = p.id; });
+  return URLMAP;
 }
-function buildSearch(W){
-  W.st = { tab:'web', view:'home', back:[] };
-  var inp = h('input', { class:'inp', placeholder:'한 단어로 검색', 'aria-label':'검색어', autocomplete:'off', enterkeyhint:'search' });
-  var form = h('form', { class:'srch-form', onsubmit:function(e){ e.preventDefault(); runSearch(W, inp.value); } }, h('span', { html: ico('search') }), inp, h('button', { class:'btn pri', type:'submit' }, '검색'));
-  function tb(k, label){ return h('button', { class: W.st.tab === k ? 'on' : '', 'data-tab': k, onclick:function(){ setTab(W, k); } }, label); }
-  var tabs = h('div', { class:'srch-tabs' }, tb('web', '웹'), tb('arch', '아카이브'));
-  var top = h('div', { class:'srch-top' }, h('div', { class:'srch-logo' }, '메아리'), form, tabs);
-  var main = h('div', { class:'srch-main' });
-  W.body.innerHTML = '';
-  W.body.appendChild(h('div', { class:'srch' }, top, main));
-  W.st.inp = inp; W.st.main = main; W.st.tabsEl = tabs;
-  var setTop = function(){ W.body.style.setProperty('--srch-top', top.offsetHeight + 'px'); };
-  setTimeout(setTop, 0);
-  if (window.ResizeObserver) { try { new ResizeObserver(setTop).observe(top); } catch (e) {} }
-  searchHome(W);
-}
-function setTab(W, k){
-  W.st.tab = k;
-  $$('button', W.st.tabsEl).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-tab') === k); });
-  W.st.inp.placeholder = k === 'arch' ? '페이지 주소 또는 게시글 ID' : '한 단어로 검색';
-  W.st.inp.value = ''; searchHome(W);
-}
-function searchHome(W){
-  W.st.view = 'home'; W.st.back = [];
-  var arch = W.st.tab === 'arch';
-  W.st.main.innerHTML = '';
-  W.st.main.appendChild(h('div', { class:'srch-home' },
-    h('div', { class:'big' }, arch ? '아카이브' : '메아리'),
-    h('p', null, arch ? '지워진 페이지의 보관본을 찾습니다' : '정확한 한 단어만 메아리가 되어 돌아옵니다'),
-    h('p', { class:'tips', html: arch
-      ? '<b>페이지 주소</b>나 <b>게시글 ID</b>를 넣으세요. 주소 앞의 http:// 는 빼도 됩니다. 웹 검색에서 「삭제된 페이지」로 나온 주소를 여기에 넣어 보세요.'
-      : '띄어쓰기 없이 <b>한 단어</b>만 검색됩니다. 인물 이름은 붙여 쓰고, 영문 아이디는 대소문자를 가리지 않습니다. 결과가 없으면 단어를 바꿔 보세요.' })));
-}
-function runSearch(W, q){
-  var raw = String(q || '').trim(); if (!raw) return;
-  sfx('search');
-  var main = W.st.main; main.innerHTML = '';
-  W.st.view = 'results'; W.st.back = [];
-  if (/\s/.test(raw)) {
-    main.appendChild(h('div', { class:'srch-zero' }, h('div', { class:'z', style:'font-size:28px' }, '한 단어만 입력하세요'),
-      h('p', null, '「' + raw + '」에는 띄어쓰기가 있습니다. 인물 이름은 붙여서 검색합니다.')));
-    sfx('bad'); return;
+function stamp(saved){ var d = String(saved || '').replace(/\D/g, ''); while (d.length < 14) d += '0'; return d.slice(0, 14); }
+function entryUrl(e){
+  var p = e.id && IDX.pages[e.id];
+  switch (e.k) {
+    case 'home': return 'https://' + HOST_MEARI;
+    case 'search': return 'https://' + HOST_MEARI + '/search?q=' + e.q + (e.f ? '&type=' + e.f : '');
+    case 'page': return 'https://' + (p ? p.url : '');
+    case 'vhome': return 'https://' + HOST_VAULT;
+    case 'vsearch': return 'https://' + HOST_VAULT + '/search?q=' + e.q;
+    case 'apage': return 'https://' + HOST_VAULT + '/web/' + stamp(p && p.saved) + '/' + (p ? p.url : '');
+    default: return 'https://' + (e.url || '');
   }
-  var key = H(raw), arch = W.st.tab === 'arch';
-  var res = IDX.pageList.filter(function(p){
-    return !!p.archive === arch && p.keys && p.keys.indexOf(key) >= 0 && (!p.requires || S.flags[p.requires]) && !(p.hideIf && S.flags[p.hideIf]);
+}
+function entryTitle(e){
+  var p = e.id && IDX.pages[e.id];
+  switch (e.k) {
+    case 'home': return '메아리';
+    case 'search': return e.q + ' — 메아리 검색';
+    case 'page': return p ? p.title : '';
+    case 'vhome': return '시간창고 — 웹 아카이브';
+    case 'vsearch': return e.q + ' — 시간창고';
+    case 'apage': return p ? p.title : '';
+    default: return '페이지를 찾을 수 없음';
+  }
+}
+function entryIcon(e){ return (e.k === 'home' || e.k === 'search') ? 'search' : (e.k === 'vhome' || e.k === 'vsearch' || e.k === 'apage') ? 'archive' : 'globe'; }
+
+function openSearch(arg){
+  var W = openWin('search', '브라우저', 1000, 680), fresh = !W.st;
+  if (fresh) buildBrowser(W);
+  var nt = arg && arg.newTab && !fresh;
+  if (arg && arg.page) { var p = IDX.pages[arg.page]; if (p && (!p.requires || S.flags[p.requires])) brNav(W, { k: p.archive ? 'apage' : 'page', id: p.id }, nt); }
+  else if (arg && arg.url) brNav(W, routeUrl(arg.url), nt);
+  if (arg && arg.focus) setTimeout(function(){ W.st.el.omni.focus(); }, 50);
+}
+function buildBrowser(W){
+  var st = W.st = { tabs: [{ hist: [{ k:'home' }], pos: 0 }], cur: 0 };
+  var tabs = h('div', { class:'br-tabs', role:'tablist' });
+  var back = h('button', { class:'br-btn br-back', title:'뒤로', 'aria-label':'뒤로', html: ico('arrow-left'), onclick:function(){ brStep(W, -1); } });
+  var fwd = h('button', { class:'br-btn br-fwd', title:'앞으로', 'aria-label':'앞으로', html: ico('arrow-right'), onclick:function(){ brStep(W, 1); } });
+  var rel = h('button', { class:'br-btn', title:'새로 고침', 'aria-label':'새로 고침', html: ico('rotate-cw'), onclick:function(){ brRender(W); } });
+  var omni = h('input', { class:'br-omni', 'aria-label':'주소 또는 검색어', spellcheck:'false', autocomplete:'off' });
+  var copyB = h('button', { class:'br-btn br-copy', type:'button', title:'주소 복사', 'aria-label':'주소 복사', html: ico('copy'), onclick:function(){ copyClip(omni.value, '주소를 복사했습니다'); } });
+  var omniForm = h('form', { class:'br-omni-wrap', onsubmit:function(e){ e.preventDefault(); omniGo(W, omni.value); omni.blur(); } }, h('span', { class:'br-lock', html: ico('lock') }), omni, copyB);
+  omni.addEventListener('focus', function(){ setTimeout(function(){ omni.select(); }, 0); });
+  var bar = h('div', { class:'br-bar' }, back, fwd, rel, omniForm);
+  var marks = h('div', { class:'br-marks' },
+    h('button', { class:'br-mark', html: ico('search') + '<span>메아리 검색</span>', onclick:function(e){ brNav(W, { k:'home' }, e.ctrlKey || e.metaKey); } }),
+    h('button', { class:'br-mark', html: ico('archive') + '<span>시간창고 — 웹 아카이브</span>', onclick:function(e){ brNav(W, { k:'vhome' }, e.ctrlKey || e.metaKey); } }));
+  var view = h('div', { class:'br-view' });
+  W.body.innerHTML = '';
+  W.body.appendChild(h('div', { class:'browser' }, tabs, bar, marks, view));
+  st.el = { tabs: tabs, back: back, fwd: fwd, omni: omni, view: view };
+  brRender(W);
+}
+function curTab(W){ return W.st.tabs[W.st.cur]; }
+function brNav(W, entry, newTab){
+  var st = W.st;
+  entry.fresh = true;
+  if (newTab) { st.tabs.push({ hist: [entry], pos: 0 }); st.cur = st.tabs.length - 1; }
+  else { var t = curTab(W); t.hist = t.hist.slice(0, t.pos + 1); t.hist.push(entry); t.pos++; }
+  brRender(W);
+}
+function brStep(W, d){ var t = curTab(W), np = t.pos + d; if (np < 0 || np >= t.hist.length) return; t.pos = np; brRender(W); }
+function closeTab(W, i){
+  var st = W.st;
+  st.tabs.splice(i, 1);
+  if (!st.tabs.length) st.tabs.push({ hist: [{ k:'home' }], pos: 0 });
+  if (i < st.cur || st.cur >= st.tabs.length) st.cur = Math.max(0, st.cur - 1);
+  brRender(W);
+}
+function brRender(W){
+  var st = W.st, el = st.el, t = curTab(W), e = t.hist[t.pos];
+  el.tabs.innerHTML = '';
+  st.tabs.forEach(function(tb, i){
+    var te = tb.hist[tb.pos];
+    var tab = h('div', { class:'br-tab' + (i === st.cur ? ' on' : ''), role:'tab', title: entryTitle(te) },
+      h('span', { class:'br-fav', html: ico(entryIcon(te)) }), h('span', { class:'br-tt' }, entryTitle(te)),
+      h('button', { class:'br-x', title:'탭 닫기', 'aria-label':'탭 닫기', html: ico('x'), onclick:function(ev){ ev.stopPropagation(); closeTab(W, i); } }));
+    tab.addEventListener('click', function(){ st.cur = i; brRender(W); });
+    tab.addEventListener('auxclick', function(ev){ if (ev.button === 1) closeTab(W, i); });
+    el.tabs.appendChild(tab);
   });
-  W.st.lastQ = raw; W.st.lastRes = res;
-  if (!res.length) {
-    var c = S.chapter; S.fail[c] = (S.fail[c] || 0) + 1;
+  el.tabs.appendChild(h('button', { class:'br-new', title:'새 탭', 'aria-label':'새 탭', html: ico('plus'), onclick:function(){ brNav(W, { k:'home' }, true); } }));
+  el.back.disabled = t.pos === 0; el.fwd.disabled = t.pos >= t.hist.length - 1;
+  el.omni.value = entryUrl(e);
+  setTitle('search', entryTitle(e) + ' — 브라우저');
+  el.view.innerHTML = '';
+  var fresh = !!e.fresh; e.fresh = false;
+  ({ home: viewHome, search: viewSearch, page: viewPage, apage: viewPage, vhome: viewVault, vsearch: viewVaultSearch, error: viewError })[e.k](W, e, el.view, fresh);
+  linkUrls(el.view);
+  bindLinks(el.view);
+  el.view.scrollTop = 0;
+}
+function routeUrl(v){
+  var u = String(v || '').trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '');
+  var host = u.split(/[\/?#]/)[0].toLowerCase();
+  var qm = u.match(/[?&]q=([^&#]*)/), q = null;
+  if (qm) { try { q = decodeURIComponent(qm[1]); } catch (x) { q = qm[1]; } }
+  if (host === HOST_MEARI) return q ? { k:'search', q: q } : { k:'home' };
+  if (host === HOST_VAULT) {
+    var wm = u.match(/\/web\/\d+\/(.+)$/);
+    if (wm) { var ap = vaultFind(wm[1]); return ap.length === 1 ? { k:'apage', id: ap[0].id } : { k:'vsearch', q: wm[1] }; }
+    return q ? { k:'vsearch', q: q } : { k:'vhome' };
+  }
+  var id = urlMap()[norm(u)];
+  return id ? { k:'page', id: id } : { k:'error', url: u };
+}
+function looksUrl(v){ var u = String(v).trim().replace(/^https?:\/\//i, ''); return !/\s/.test(u) && /^[a-z0-9-]+(\.[a-z0-9-]+)+([\/?#]|$)/i.test(u); }
+function omniGo(W, v){
+  v = String(v || '').trim(); if (!v) return;
+  brNav(W, looksUrl(v) ? routeUrl(v) : { k:'search', q: v });
+}
+
+/* ---- 메아리 (검색 사이트) ---- */
+function searchBox(W, val, big){
+  var inp = h('input', { class:'inp', placeholder:'한 단어로 검색', 'aria-label':'검색어', autocomplete:'off', enterkeyhint:'search' });
+  inp.value = val || '';
+  var f = h('form', { class:'srch-form' + (big ? ' big' : ''), onsubmit:function(e){ e.preventDefault(); var q = inp.value.trim(); if (q) brNav(W, { k:'search', q: q }); } },
+    h('span', { html: ico('search') }), inp, h('button', { class:'btn pri', type:'submit' }, '검색'));
+  return { form: f, inp: inp };
+}
+function viewHome(W, e, view){
+  var sb = searchBox(W, '', true);
+  var vl = h('a', { class:'tlink' }, '시간창고');
+  vl.addEventListener('click', function(){ brNav(W, { k:'vhome' }); });
+  view.appendChild(h('div', { class:'site-home' }, h('div', { class:'big' }, '메아리'), sb.form,
+    h('p', { class:'tips', html: '정확한 <b>한 단어</b>만 메아리가 되어 돌아옵니다. 띄어쓰기 없이 검색하고, 인물 이름은 붙여 쓰세요. 영문 아이디는 대소문자를 가리지 않습니다.' }),
+    h('p', { class:'tips' }, '지워진 페이지는 웹 아카이브 ', vl, '에서 찾을 수 있습니다.')));
+  setTimeout(function(){ if (document.activeElement !== W.st.el.omni) sb.inp.focus(); }, 30);
+}
+var FILTERS = [['', '전체'], ['news', '뉴스'], ['wiki', '백과'], ['blog', '블로그'], ['etc', '기타']];
+function typeGroup(p){ return p.type === 'news' ? 'news' : p.type === 'wiki' ? 'wiki' : (p.type === 'blog' || p.type === 'blog09') ? 'blog' : 'etc'; }
+function siteHead(W, logo, home, form){
+  var a = h('a', { class:'site-logo' }, logo);
+  a.addEventListener('click', function(){ brNav(W, home); });
+  return h('div', { class:'site-head' }, h('div', { class:'site-row' }, a, form));
+}
+function zeroBox(title, line, small){
+  return h('div', { class:'srch-zero' }, h('div', { class:'z' + (title ? ' sm' : ''), html: title ? esc(title) : '검색 결과 <em>0</em>건' }), h('p', null, line), small ? h('p', { class:'small' }, small) : null);
+}
+function viewSearch(W, e, view, fresh){
+  var raw = String(e.q || '').trim();
+  var sb = searchBox(W, raw);
+  var head = siteHead(W, '메아리', { k:'home' }, sb.form);
+  view.appendChild(head);
+  var body = h('div', { class:'srch-res' });
+  view.appendChild(body);
+  if (/\s/.test(raw)) { body.appendChild(zeroBox('한 단어만 입력하세요', '「' + raw + '」에는 띄어쓰기가 있습니다. 인물 이름은 붙여서 검색합니다.')); if (fresh) sfx('bad'); return; }
+  var key = H(raw);
+  var all = IDX.pageList.filter(function(p){ return !p.archive && p.keys && p.keys.indexOf(key) >= 0 && (!p.requires || S.flags[p.requires]) && !(p.hideIf && S.flags[p.hideIf]); });
+  if (fresh) sfx('search');
+  if (!all.length) {
     var sug = null;
-    if (S.fail[c] >= 12) { S.fail[c] = 0; sug = pickSuggest(); }
-    save();
-    var z = h('div', { class:'srch-zero' },
-      h('div', { class:'z', html:'검색 결과 <em>0</em>건' }),
-      h('p', null, '「' + raw + '」' + (arch ? '의 보관본을 찾을 수 없습니다.' : '와(과) 일치하는 페이지가 없습니다.')),
-      h('p', { class:'small' }, arch ? '주소는 정확히 입력해야 합니다. 대소문자는 가리지 않습니다.' : '다른 한 단어로 검색해 보세요. 지워진 페이지는 아카이브 탭에서 찾을 수 있습니다.'));
+    if (fresh) { var c = S.chapter; S.fail[c] = (S.fail[c] || 0) + 1; if (S.fail[c] >= 12) { S.fail[c] = 0; sug = pickSuggest(); } save(); }
+    var z = zeroBox(null, '「' + raw + '」와(과) 일치하는 페이지가 없습니다.', '다른 한 단어로 검색해 보세요. 지워진 페이지는 웹 아카이브 「시간창고」에서 찾을 수 있습니다.');
     if (sug) {
       var b = h('span', { class:'blur', title:'눌러서 선명하게' }, sug);
-      b.addEventListener('click', function(){ b.classList.add('clear'); W.st.inp.value = sug; });
+      b.addEventListener('click', function(){ b.classList.add('clear'); sb.inp.value = sug; });
       z.appendChild(h('div', { class:'suggest' }, '혹시 이것을 찾으셨나요? ', b));
     }
-    main.appendChild(z); return;
+    body.appendChild(z); return;
   }
-  S.fail[S.chapter] = 0; save();
-  renderResults(W, res, raw);
-}
-function pickSuggest(){
-  var ch = IDX.chapters[S.chapter], list = (ch && ch.suggest) || [];
-  for (var i = 0; i < list.length; i++) if (!S.seen['page:' + list[i].page]) return list[i].show;
-  return list.length ? list[Math.floor(Math.random() * list.length)].show : null;
-}
-var TYPE_LABEL = { news:'뉴스', wiki:'백과', blog:'블로그', blog09:'블로그', letter:'마을 소식지', shop:'가게', matome:'정리 사이트', tool:'도구', dead:'삭제됨', sns:'SNS', board:'게시판' };
-function renderResults(W, res, raw){
-  var main = W.st.main; main.innerHTML = '';
-  var box = h('div', { class:'srch-res' }, h('div', { class:'srch-count' }, '「' + raw + '」 검색 결과 ' + res.length + '건'));
-  res.forEach(function(p){
-    var seen = S.seen['page:' + p.id];
-    var tags = [h('span', { class:'tag' }, p.archive ? '아카이브' : (TYPE_LABEL[p.type] || '웹'))];
-    if (p.archive && p.hidden && S.hidden[p.id]) tags.push(h('span', { class:'tag' }, '숨은 기록'));
-    var it = h('div', { class:'r-item' + (p.type === 'dead' ? ' dead' : '') + (seen ? ' seen' : '') },
-      h('div', { class:'r-url' }, p.url || ''),
-      h('a', { class:'r-title', onclick:function(){ showPage(W, p.id, true); } }, p.title),
-      h('div', { class:'r-snip' }, tags, (p.date ? p.date + ' — ' : ''), p.snippet || ''));
-    box.appendChild(it);
+  if (fresh) { S.fail[S.chapter] = 0; save(); }
+  var f = e.f || '';
+  var tabs = h('div', { class:'site-filter' });
+  FILTERS.forEach(function(fl){
+    var n = fl[0] ? all.filter(function(p){ return typeGroup(p) === fl[0]; }).length : all.length;
+    if (fl[0] && !n) return;
+    tabs.appendChild(h('button', { class: f === fl[0] ? 'on' : '', onclick:function(){ var t = curTab(W); t.hist[t.pos] = { k:'search', q: raw, f: fl[0] }; brRender(W); } }, fl[1]));
   });
-  main.appendChild(box);
-  main.scrollTop = 0; W.body.scrollTop = 0;
+  head.appendChild(tabs);
+  var res = f ? all.filter(function(p){ return typeGroup(p) === f; }) : all;
+  body.appendChild(h('div', { class:'srch-count' }, '검색 결과 ' + res.length + '건 (' + (0.11 + (raw.length % 7) * 0.03).toFixed(2) + '초)'));
+  res.forEach(function(p){ body.appendChild(resultItem(W, p, { k:'page', id: p.id })); });
 }
-function showPage(W, id, push){
-  var p = IDX.pages[id]; if (!p) return;
-  if (p.requires && !S.flags[p.requires]) return;
-  if (push && W.st.view !== 'page-init') W.st.back.push(W.st.view === 'page' ? { page: W.st.pageId } : { results: true });
-  W.st.view = 'page'; W.st.pageId = id;
-  discover('page', id, p.title);
+function siteName(p){ return p.site || String(p.url || '').split('/')[0]; }
+function resultItem(W, p, entry, extra){
+  var seen = S.seen['page:' + p.id];
+  var url = entryUrl(entry);
+  var a = h('a', { class:'r-title', href:'#', 'data-url': url }, p.title);
+  a.addEventListener('click', function(ev){ ev.preventDefault(); brNav(W, entry, ev.ctrlKey || ev.metaKey); });
+  a.addEventListener('auxclick', function(ev){ if (ev.button === 1) { ev.preventDefault(); brNav(W, entry, true); } });
+  var sn = siteName(p);
+  return h('div', { class:'r-item' + (p.type === 'dead' ? ' dead' : '') + (seen ? ' seen' : '') },
+    h('div', { class:'r-site' }, h('span', { class:'r-fav' }, sn.charAt(0) || '?'),
+      h('div', null, h('div', { class:'r-sname' }, sn), h('div', { class:'r-url' }, url.replace(/^https:\/\//, '')))),
+    a,
+    h('div', { class:'r-snip' }, extra || null, p.date ? h('span', { class:'r-date' }, p.date + ' — ') : null, p.snippet || ''));
+}
+function viewPage(W, e, view){
+  var p = IDX.pages[e.id];
+  if (!p || (p.requires && !S.flags[p.requires])) return viewError(W, { url: p ? p.url : '' }, view);
+  discover('page', p.id, p.title);
   fx(p.fx);
-  var main = W.st.main; main.innerHTML = '';
-  var nav = h('div', { class:'page-nav' },
-    h('button', { class:'btn ghost', html: ico('arrow-left') + '<span>뒤로</span>', onclick:function(){ goBack(W); } }),
-    h('div', { class:'addr', title: p.url }, (p.archive ? '보관본 · ' : '') + (p.url || '')));
   var holder = h('div', { class:'webpage', html: pageHTML(p) });
-  main.appendChild(nav); main.appendChild(holder);
+  view.appendChild(holder);
   if (p.lock) holder.appendChild(lockBox(p));
   if (p.endBtn && S.flags.ending_true) {
     holder.appendChild(h('div', { class:'center', style:'padding:10px 0 40px' }, h('button', { class:'btn pri', onclick:function(){ endingScreen('correction'); } }, '기록을 닫는다 →')));
   }
-  bindLinks(holder);
-  W.body.scrollTop = 0;
 }
-function goBack(W){
-  var b = W.st.back.pop();
-  if (!b) { if (W.st.lastRes) renderResults(W, W.st.lastRes, W.st.lastQ); else searchHome(W); W.st.view = 'results'; return; }
-  if (b.page) { W.st.view = 'page-init'; showPage(W, b.page, false); }
-  else if (W.st.lastRes) { W.st.view = 'results'; renderResults(W, W.st.lastRes, W.st.lastQ); }
-  else searchHome(W);
+function viewError(W, e, view){
+  var url = e.url || '';
+  view.appendChild(h('div', { class:'br-error' }, h('div', { class:'br-err-ico', html: ico('globe') }),
+    h('h2', null, '이 페이지를 찾을 수 없습니다'), h('p', { class:'mono' }, url),
+    h('p', null, '주소가 바뀌었거나 페이지가 지워졌을 수 있습니다. 지워진 페이지라면 웹 아카이브 「시간창고」에 보관본이 남아 있을지도 모릅니다.'),
+    h('div', { class:'br-err-act' },
+      h('button', { class:'btn', html: ico('copy') + '<span>주소 복사</span>', onclick:function(){ copyClip(url, '주소를 복사했습니다'); } }),
+      h('button', { class:'btn', html: ico('archive') + '<span>시간창고 열기</span>', onclick:function(){ brNav(W, { k:'vhome' }); } }))));
+}
+
+/* ---- 시간창고 (웹 아카이브 사이트) ---- */
+function vaultFind(q){ var key = H(q); return IDX.pageList.filter(function(p){ return p.archive && p.keys && p.keys.indexOf(key) >= 0; }); }
+function vaultBox(W, val){
+  var inp = h('input', { class:'inp', placeholder:'페이지 주소 또는 게시판 ID', 'aria-label':'보관본을 찾을 주소', autocomplete:'off', spellcheck:'false' });
+  inp.value = val || '';
+  var f = h('form', { class:'srch-form', onsubmit:function(e){ e.preventDefault(); var q = inp.value.trim(); if (q) brNav(W, { k:'vsearch', q: q }); } },
+    h('span', { html: ico('archive') }), inp, h('button', { class:'btn pri', type:'submit' }, '보관본 찾기'));
+  return { form: f, inp: inp };
+}
+function viewVault(W, e, view){
+  var vb = vaultBox(W, '');
+  view.appendChild(h('div', { class:'site-home vault' }, h('div', { class:'big' }, '시간창고'), h('p', { class:'lead' }, '지워진 웹 페이지의 보관본을 찾습니다'), vb.form,
+    h('p', { class:'tips', html: '<b>페이지 주소</b>나 게시판의 <b>ID</b>를 넣으세요. 주소 앞의 https:// 는 빼도 됩니다.<br>다른 창에 적힌 주소는 마우스로 끌어 복사하거나, 링크를 오른쪽 클릭해 「링크 주소 복사」로 가져올 수 있습니다.' })));
+  setTimeout(function(){ if (document.activeElement !== W.st.el.omni) vb.inp.focus(); }, 30);
+}
+function viewVaultSearch(W, e, view, fresh){
+  var raw = String(e.q || '').trim();
+  var vb = vaultBox(W, raw);
+  view.appendChild(siteHead(W, '시간창고', { k:'vhome' }, vb.form));
+  var body = h('div', { class:'srch-res' }); view.appendChild(body);
+  if (fresh) sfx('search');
+  var res = vaultFind(raw);
+  if (!res.length) { body.appendChild(zeroBox('보관본이 없습니다', '「' + raw + '」의 보관본을 찾을 수 없습니다.', '주소는 정확히 입력해야 합니다. 대소문자와 https:// 는 가리지 않습니다.')); return; }
+  body.appendChild(h('div', { class:'srch-count' }, '「' + raw + '」 보관본 ' + res.length + '개'));
+  res.forEach(function(p){
+    body.appendChild(resultItem(W, p, { k:'apage', id: p.id }, h('span', { class:'tag' }, '저장 ' + (p.saved || '') + (p.hidden && S.hidden[p.id] ? ' · 숨은 기록' : ''))));
+  });
+}
+
+/* ---- 링크 · 복사 ---- */
+var URL_RE = /(?:https?:\/\/)?(?:[a-z0-9-]+\.)+(?:jp|com|net|org|example)(?:\/[^\s<>"'「」『』()\[\]{}\u3001,]*)?/gi;
+function linkUrls(root){
+  if (!root || !document.createTreeWalker) return;
+  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: function(n){
+    var p = n.parentNode;
+    if (!p || !p.closest || p.closest('a,button,input,textarea,select,script,style,svg,.r-url,.mail-hdr,.arch-banner,.br-omni-wrap')) return NodeFilter.FILTER_REJECT;
+    URL_RE.lastIndex = 0;
+    return URL_RE.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+  } });
+  var nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(function(n){
+    var s = n.nodeValue, frag = document.createDocumentFragment(), last = 0, m;
+    URL_RE.lastIndex = 0;
+    while ((m = URL_RE.exec(s))) {
+      var prev = s.charAt(m.index - 1);
+      if (prev && /[@\w.\/-]/.test(prev)) continue;
+      var u = m[0].replace(/[.,)]+$/, '');
+      frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+      frag.appendChild(h('a', { class:'ulink', href:'#', 'data-url': u, title:'누르면 브라우저에서 열기 · 오른쪽 클릭으로 주소 복사' }, u));
+      last = m.index + u.length; URL_RE.lastIndex = last;
+    }
+    frag.appendChild(document.createTextNode(s.slice(last)));
+    n.parentNode.replaceChild(frag, n);
+  });
+}
+function copyClip(txt, msg){
+  txt = String(txt || '');
+  function ok(){ toast(msg || '복사했습니다', txt.length > 64 ? txt.slice(0, 64) + '…' : txt); }
+  function fallback(){
+    var ta = h('textarea', { style:'position:fixed;left:-9999px;top:0' }); ta.value = txt; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); ok(); } catch (e) { toast('복사하지 못했습니다', txt); } ta.remove();
+  }
+  try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, fallback); else fallback(); } catch (e) { fallback(); }
+}
+function linkTarget(el){
+  var a = el.closest && el.closest('.ulink,.r-title,.ilink[data-page]');
+  if (!a) return null;
+  if (a.classList.contains('ilink')) { var p = IDX.pages[a.getAttribute('data-page')]; if (!p) return null; return { el: a, url: entryUrl({ k: p.archive ? 'apage' : 'page', id: p.id }), page: p.id }; }
+  return { el: a, url: a.getAttribute('data-url') };
+}
+function linkCtx(e){
+  var t = linkTarget(e.target); if (!t || !S) return;
+  e.preventDefault(); e.stopPropagation(); hideMenus();
+  var m = $('#ctxmenu'); m.innerHTML = '';
+  function item(icon, label, fn){ return h('button', { class:'cm-item', role:'menuitem', html: ico(icon) + '<span>' + esc(label) + '</span>', onclick:function(){ hideMenus(); fn(); } }); }
+  function go(nt){ if (t.page) openSearch({ page: t.page, newTab: nt }); else if (t.el.classList.contains('r-title')) t.el.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: nt })); else openSearch({ url: t.url, newTab: nt }); }
+  m.appendChild(item('external-link', '링크 열기', function(){ go(false); }));
+  m.appendChild(item('plus', '새 탭에서 열기', function(){ go(true); }));
+  m.appendChild(h('hr'));
+  m.appendChild(item('link', '링크 주소 복사', function(){ copyClip(t.url, '링크 주소를 복사했습니다'); }));
+  m.classList.remove('hidden');
+  var x = Math.min(e.clientX, window.innerWidth - m.offsetWidth - 8), y = Math.min(e.clientY, window.innerHeight - m.offsetHeight - 8);
+  m.style.left = Math.max(8, x) + 'px'; m.style.top = Math.max(8, y) + 'px';
+}
+
+function pickSuggest(){
+  var ch = IDX.chapters[S.chapter], list = (ch && ch.suggest) || [];
+  for (var i = 0; i < list.length; i++) if (!S.seen['page:' + list[i].page]) return list[i].show;
+  return list.length ? list[Math.floor(Math.random() * list.length)].show : null;
 }
 function pageHTML(p){
   var body = markup(p.body || ''), t = p.type, o = '';
@@ -702,6 +891,7 @@ function renderMail(W){
     });
     view.appendChild(h('h2', null, m.subject)); view.appendChild(hdrEl); view.appendChild(tog); view.appendChild(body);
     if ((m.attach || []).length) { view.appendChild(h('div', { class:'mail-att-h' }, '첨부 파일')); view.appendChild(at); }
+    linkUrls(body);
     bindLinks(view);
   } else view.appendChild(h('div', { class:'empty' }, '메일을 선택하세요.'));
   W.body.appendChild(h('div', { class:'mail' }, list, view));
@@ -1072,6 +1262,7 @@ function renderThread(W, t){
   var body = h('div', { html: html });
   wrap.appendChild(body);
   W.body.appendChild(wrap);
+  linkUrls(body);
   // 앵커 · ID · 트립 팝업
   body.addEventListener('click', function(e){
     var a = e.target.closest('.anc');
@@ -1145,20 +1336,37 @@ function buildVideo(W, v){
   var ctrl2 = h('div', { class:'mm-ctrl', style:'padding-top:0' }, h('span', { class:'small' }, '속도'), spBtns, h('span', { class:'small', style:'margin-left:10px' }, '시간 이동'), jump, jumpBtn);
   var desc = h('div', { class:'mm-desc' });
   var info = h('div', { class:'mm-info', html: markup(v.info) });
-  var clh = h('div', { class:'cl-h' }, '댓글 목록 (현재 시간 ±20초)');
+  st.filter = { text:'', user:null };
+  var graph = h('div', { class:'mm-graph', title:'시간대별 댓글 수 — 누르면 그 시간으로 이동' });
+  var bins = Math.ceil(v._dur / 10), cnt = [], bi;
+  for (bi = 0; bi < bins; bi++) cnt.push(0);
+  v._c.forEach(function(c){ cnt[Math.min(bins - 1, Math.floor(c.t / 10))]++; });
+  var mx = Math.max.apply(null, cnt) || 1;
+  graph.innerHTML = '<svg viewBox="0 0 ' + bins + ' 24" preserveAspectRatio="none">' + cnt.map(function(n, i){ var hh = Math.max(.6, n / mx * 22); return '<rect x="' + (i + .1) + '" y="' + (24 - hh) + '" width=".8" height="' + hh + '"/>'; }).join('') + '<rect class="ph" x="0" y="0" width=".35" height="24"/></svg>';
+  graph.addEventListener('click', function(e){ var r = graph.getBoundingClientRect(); seekVideo(W, (e.clientX - r.left) / r.width * v._dur); });
+  var chaps = h('div', { class:'mm-chaps' });
+  v.segments.forEach(function(sg){ chaps.appendChild(h('button', { title: sg.desc.replace(/<[^>]+>/g, ''), onclick:function(){ seekVideo(W, sg._a); } }, h('b', null, sg.from), ' ' + (sg.name || ''))); });
+  var cq = h('input', { class:'cl-q', placeholder:'댓글 검색 (글자 또는 회원 이름)', 'aria-label':'댓글 검색', autocomplete:'off' });
+  cq.addEventListener('input', function(){ st.filter.text = cq.value.trim(); st.filter.user = null; renderCL(W, true); });
+  var mode = h('div', { class:'cl-mode' });
+  var clh = h('div', { class:'cl-h' }, h('div', { class:'cl-t' }, '댓글'), cq, mode);
   var cl = h('div', { class:'cl' });
   var prof = h('div', { class:'mm-prof hidden' });
   var right = h('div', { class:'mm-right' }, clh, cl);
-  var left = h('div', { class:'mm-left' }, screen, ctrl, ctrl2, desc, prof, info);
+  var left = h('div', { class:'mm-left' }, screen, graph, ctrl, chaps, ctrl2, desc, prof, info);
   W.body.innerHTML = '';
   W.body.appendChild(h('div', { class:'mm' }, h('div', { class:'mm-head' }, h('span', { class:'logo' }, '밀밀동화'), h('b', null, v.title)), h('div', { class:'mm-main' }, left, right)));
-  bindLinks(info);
-  st.el = { screen: screen, scene: scene, dm: dm, playBtn: playBtn, slider: slider, tm: tm, desc: desc, cl: cl, prof: prof };
+  linkUrls(info); bindLinks(info);
+  st.el = { screen: screen, scene: scene, dm: dm, playBtn: playBtn, slider: slider, tm: tm, desc: desc, cl: cl, prof: prof, graph: graph, mode: mode, cq: cq };
+  mode.addEventListener('click', function(e){ if (e.target.closest('.cl-clear')) { st.filter.user = null; st.filter.text = ''; cq.value = ''; renderCL(W, true); } });
   playBtn.addEventListener('click', function(){ st.playing ? pauseVideo(W) : playVideo(W); });
   screen.style.cursor = 'zoom-in';
   screen.addEventListener('click', function(){ var sg = v.segments[st.seg]; if (sg) { pauseVideo(W); openPhoto(sg.scene, '[' + fmtSec(st.t) + '] ' + sg.desc); } });
   slider.addEventListener('input', function(){ seekVideo(W, +slider.value, true); });
-  cl.addEventListener('click', function(e){ var u = e.target.closest('.cu'); if (u) showMMUser(W, u.getAttribute('data-u')); });
+  cl.addEventListener('click', function(e){
+    var tt = e.target.closest('.ct'); if (tt) { seekVideo(W, +tt.getAttribute('data-t')); return; }
+    var u = e.target.closest('.cu'); if (u) { var k = u.getAttribute('data-u'); st.filter.user = k; st.filter.text = ''; cq.value = ''; showMMUser(W, k); renderCL(W, true); }
+  });
   W.onclose = function(){ st.playing = false; cancelAnimationFrame(st.raf); };
   W.onmin = function(){ pauseVideo(W); };
   seekVideo(W, 0, true);
@@ -1217,27 +1425,39 @@ function updVideo(W, force){
     if (si !== st.seg) { st.seg = si; st.el.scene.innerHTML = sceneSVG(v.segments[si].scene); }
     st.el.desc.innerHTML = '<b>[' + v.segments[si].from + ' ~ ' + v.segments[si].to + ']</b> ' + v.segments[si].desc;
   }
+  var ph = st.el.graph && st.el.graph.querySelector('.ph');
+  if (ph) ph.setAttribute('x', (t / v._dur * Math.ceil(v._dur / 10)).toFixed(2));
   var sec = Math.floor(t);
-  if (sec !== st.lastSec || force) { st.lastSec = sec; renderCL(W); }
+  if (sec !== st.lastSec || force) { st.lastSec = sec; renderCL(W, force); }
   (v.events || []).forEach(function(ev){
     if (S.vidFx[ev.id]) return;
     if (t >= ev._t - 1 && t <= ev._t + (ev.win || 25)) { S.vidFx[ev.id] = true; fx(ev.fx); save(); }
   });
 }
-function renderCL(W){
-  var st = W.st, t = st.t, cl = st.el.cl;
-  var rows = st.v._c.filter(function(c){ return c.t >= t - 20 && c.t <= t + 20; });
+function renderCL(W, force){
+  var st = W.st, t = st.t, cl = st.el.cl, f = st.filter || {}, rows, label;
+  var nm = function(k){ var u = st.v.users[k]; return u ? u.label : k; };
+  if (f.user || f.text) {
+    if (!force) return;
+    var q = (f.text || '').toLowerCase();
+    rows = st.v._c.filter(function(c){ return f.user ? c.u === f.user : (c.text.toLowerCase().indexOf(q) >= 0 || nm(c.u).toLowerCase().indexOf(q) >= 0); });
+    label = (f.user ? esc(nm(f.user)) + '의 댓글 ' : '「' + esc(f.text) + '」 검색 결과 ') + rows.length + '개 · 시간을 누르면 그 장면으로 <button class="cl-clear">모두 보기</button>';
+    rows = rows.slice(0, 300);
+  } else {
+    rows = st.v._c.filter(function(c){ return c.t >= t - 20 && c.t <= t + 20; });
+    label = '지금 장면 앞뒤 20초 · 회원 이름을 누르면 그 회원의 댓글만 모아 봅니다';
+  }
+  st.el.mode.innerHTML = label;
   var html = '';
   rows.forEach(function(c){
-    var u = st.v.users[c.u], name = u ? u.label : c.u;
-    html += '<div class="cl-row' + (c.del ? ' del' : '') + '" style="' + (c.t > t ? 'opacity:.45' : '') + '"><span class="ct">' + fmtSec(c.t) + '</span><span class="cu" data-u="' + esc(c.u) + '">' + esc(name) + '</span><span class="cx">' + (c.del ? '(운영자에 의해 삭제된 댓글)' : esc(c.text)) + '</span></div>';
+    html += '<div class="cl-row' + (c.del ? ' del' : '') + '" style="' + (!f.user && !f.text && c.t > t ? 'opacity:.45' : '') + '"><button class="ct" data-t="' + c.t.toFixed(1) + '">' + fmtSec(c.t) + '</button><span class="cu" data-u="' + esc(c.u) + '">' + esc(nm(c.u)) + '</span><span class="cx">' + (c.del ? '(운영자에 의해 삭제된 댓글)' : esc(c.text)) + '</span></div>';
   });
-  cl.innerHTML = html || '<div class="empty" style="color:#777">이 구간에는 댓글이 없습니다.</div>';
+  cl.innerHTML = html || '<div class="empty" style="color:#777">해당하는 댓글이 없습니다.</div>';
 }
 function showMMUser(W, key){
   var st = W.st, u = st.v.users[key], p = st.el.prof;
   p.classList.remove('hidden');
-  if (u) { p.innerHTML = markup(u.html); bindLinks(p); fx(u.fx); }
+  if (u) { p.innerHTML = markup(u.html); linkUrls(p); bindLinks(p); fx(u.fx); }
   else p.innerHTML = '<b>' + esc(key) + '</b> · 일반 회원<br><span class="small" style="color:#999">프로필 비공개 · 이 회원의 다른 정보는 남아 있지 않습니다.</span>';
 }
 
@@ -1360,6 +1580,7 @@ function renderProfile(W, body){
     if (st.sub === 'followers' && a.fwerCount && a.fwerCount > ids.length) list.appendChild(h('div', { class:'small muted', style:'padding:8px 12px' }, '…외 ' + (a.fwerCount - ids.length) + '명 (보관본에는 일부만 남아 있습니다)'));
   }
   body.appendChild(list);
+  linkUrls(body);
   bindSNS(W, body);
 }
 function renderTag(W, body){
@@ -1367,6 +1588,7 @@ function renderTag(W, body){
   body.appendChild(h('div', { class:'sns-prof' }, h('div', { class:'pn' }, '#' + st.tag), h('div', { class:'pid' }, st.era + ' · 게시물 ' + ps.length + '개')));
   if (!ps.length) body.appendChild(h('div', { class:'empty' }, '이 해시태그가 달린 게시물이 없습니다.'));
   ps.forEach(function(p){ body.appendChild(postEl(W, p)); });
+  linkUrls(body);
   bindSNS(W, body);
 }
 
@@ -1633,6 +1855,13 @@ E.boot = function(data){
   $('#tb-start').addEventListener('click', function(e){ e.stopPropagation(); if (S) toggleStart(); });
   $('#tb-desk').addEventListener('click', function(){ if (S) { hideMenus(); showDesktop(); } });
   $('#desktop').addEventListener('contextmenu', showCtx);
+  document.addEventListener('contextmenu', linkCtx, true);
+  document.addEventListener('click', function(e){
+    var a = e.target.closest && e.target.closest('.ulink'); if (!a || !S) return;
+    e.preventDefault();
+    var inBrowser = !!a.closest('.win[data-id=search]');
+    openSearch({ url: a.getAttribute('data-url'), newTab: e.ctrlKey || e.metaKey || !inBrowser });
+  });
   document.addEventListener('pointerdown', function(e){ if (!e.target.closest('#startmenu') && !e.target.closest('#ctxmenu') && !e.target.closest('#tb-start')) hideMenus(); });
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape') hideMenus(); });
   marqueeify();
