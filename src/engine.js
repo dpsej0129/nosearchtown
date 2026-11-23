@@ -237,7 +237,7 @@ function openWin(id, title, w, hh){
   if (W) { W.el.classList.remove('min'); focusWin(id); if (title) setTitle(id, title); return W; }
   var el = h('div', { class:'win', 'data-id': id });
   var tt = h('div', { class:'wtitle', text: title });
-  var bar = h('div', { class:'wbar' }, tt,
+  var bar = h('div', { class:'wbar' }, h('span', { class:'wico', html: ico(winIcon(id)) }), tt,
     h('button', { class:'wbtn', title:'최소화', 'aria-label':'최소화', html: ico('minus'), onclick:function(e){ e.stopPropagation(); minWin(id); } }),
     h('button', { class:'wbtn max', title:'최대화', 'aria-label':'최대화', html: ico('square'), onclick:function(e){ e.stopPropagation(); maxWin(id); } }),
     h('button', { class:'wbtn close', title:'닫기', 'aria-label':'닫기', html: ico('x'), onclick:function(e){ e.stopPropagation(); closeWin(id); } }));
@@ -254,6 +254,7 @@ function openWin(id, title, w, hh){
   dk.appendChild(el);
   W = { id: id, el: el, body: body, titleEl: tt, title: title, st: null };
   WM.wins[id] = W;
+  el.classList.add('opening'); el.addEventListener('animationend', function(){ el.classList.remove('opening'); }, { once: true });
   el.addEventListener('pointerdown', function(){ focusWin(id); });
   dragify(bar, el); resizify(rz, el);
   focusWin(id); renderTaskbar();
@@ -297,6 +298,7 @@ function resizify(rz, el){
   rz.addEventListener('pointermove', function(e){ if (!on) return; el.style.width = Math.max(300, ow + e.clientX - sx) + 'px'; el.style.height = Math.max(200, oh + e.clientY - sy) + 'px'; });
   rz.addEventListener('pointerup', function(){ on = false; var W = WM.wins[el.getAttribute('data-id')]; if (W && W.onresize) W.onresize(); });
 }
+function winIcon(id){ return id === 'photo' ? 'image' : (APPS[id] ? APPS[id].ic : 'square'); }
 function renderTaskbar(){
   var box = $('#tb-wins'); box.innerHTML = '';
   Object.keys(WM.wins).forEach(function(id){
@@ -304,7 +306,7 @@ function renderTaskbar(){
     box.appendChild(h('button', { class:'tb-btn' + (WM.top === id && !min ? ' active' : '') + (min ? ' min' : ''), title: W.title, onclick:function(){
       if (min) { W.el.classList.remove('min'); focusWin(id); }
       else if (WM.top === id) minWin(id); else focusWin(id);
-    } }, W.title));
+    } }, h('span', { class:'wico', html: ico(winIcon(id)) }), h('span', null, W.title)));
   });
 }
 
@@ -322,23 +324,111 @@ var APPS = {
   sns:        { name:'중얼중얼',        ic:'at-sign', open: function(a){ openSNS(a); } },
   phone:      { name:'폴더폰 메일함',   ic:'smartphone', open: function(){ openPhone(); } },
   final:      { name:'최종 선택',       ic:'flag', open: function(){ openFinal(); } },
+  trash:      { name:'휴지통',          ic:'trash-2', open: function(){ openTrash(); }, always:true },
   found:      { name:'발견 기록',       ic:'files', open: function(){ openFound(); }, quiet:true, noIcon:true }
 };
-var ICON_ORDER = ['search','mail','record','timeline','checkpoint','memo','hint','nana','video','sns','phone','final'];
+var ICON_ORDER = ['search','mail','record','timeline','checkpoint','memo','hint','nana','video','sns','phone','final','trash'];
 E.open = function(id, arg){
-  if (!S.apps[id] && !(APPS[id] && APPS[id].noIcon)) { toast('아직 열 수 없습니다', '이 앱은 아직 잠겨 있습니다', 'bad'); return; }
+  if (!S.apps[id] && !(APPS[id] && (APPS[id].noIcon || APPS[id].always))) { toast('아직 열 수 없습니다', '이 앱은 아직 잠겨 있습니다', 'bad'); return; }
   if (S.newApps[id]) { delete S.newApps[id]; renderIcons(); save(); }
   APPS[id].open(arg);
 };
+var DESK = { sel: {} };
+function touchMode(){ return isMobile() || (window.matchMedia && matchMedia('(pointer: coarse)').matches); }
+function paintSel(){ $$('#icons .icon').forEach(function(el){ el.classList.toggle('sel', !!DESK.sel[el.getAttribute('data-app')]); }); }
+function selectIcon(id, add){
+  if (add) { if (DESK.sel[id]) delete DESK.sel[id]; else DESK.sel[id] = true; }
+  else { DESK.sel = {}; if (id) DESK.sel[id] = true; }
+  paintSel();
+}
 function renderIcons(){
   var box = $('#icons'); if (!box) return; box.innerHTML = '';
   ICON_ORDER.forEach(function(id){
-    if (!S.apps[id]) return;
-    var a = APPS[id], cnt = null, mark = !!S.newApps[id];
+    var a = APPS[id];
+    if (!S.apps[id] && !a.always) return;
+    var cnt = null, mark = !!S.newApps[id];
     if (id === 'mail') { var u = S.mails.filter(function(m){ return !S.mailRead[m.id]; }).length; if (u) { cnt = h('span', { class:'cnt' }, String(u)); mark = true; } }
-    box.appendChild(h('button', { class:'icon', 'aria-label': a.name, onclick:function(){ E.open(id); } },
-      h('span', { class:'ic', html: ico(a.ic) }), h('span', { class:'lb' }, a.name, cnt), mark ? h('span', { class:'dot' }) : null));
+    var b = h('button', { class:'icon' + (DESK.sel[id] ? ' sel' : ''), 'data-app': id, role:'listitem', 'aria-label': a.name, title: a.name + (touchMode() ? '' : ' — 두 번 눌러 열기') },
+      h('span', { class:'ic', html: ico(a.ic) }), h('span', { class:'lb' }, a.name, cnt), mark ? h('span', { class:'dot' }) : null);
+    b.addEventListener('click', function(e){ e.stopPropagation(); hideMenus(); if (touchMode()) { E.open(id); return; } selectIcon(id, e.ctrlKey || e.metaKey); });
+    b.addEventListener('dblclick', function(e){ e.stopPropagation(); selectIcon(id); E.open(id); });
+    b.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); E.open(id); } });
+    box.appendChild(b);
   });
+}
+function openTrash(){
+  var W = openWin('trash', '휴지통', 440, 300);
+  W.body.innerHTML = '';
+  W.body.appendChild(h('div', { class:'empty', html: ico('trash-2') + '<p style="margin:12px 0 0">휴지통이 비어 있습니다</p>' }));
+}
+
+/* ---------------- 시작 메뉴 · 오른쪽 클릭 메뉴 · 끌어서 선택 ---------------- */
+function hideMenus(){ $('#startmenu').classList.add('hidden'); $('#ctxmenu').classList.add('hidden'); $('#tb-start').classList.remove('on'); }
+function smItem(icon, label, fn){ return h('button', { class:'sm-item', role:'menuitem', html: ico(icon) + '<span>' + esc(label) + '</span>', onclick:function(){ hideMenus(); fn(); } }); }
+function toggleStart(){
+  var m = $('#startmenu');
+  if (!m.classList.contains('hidden')) { hideMenus(); return; }
+  hideMenus(); m.innerHTML = '';
+  m.appendChild(h('div', { class:'sm-head' }, h('div', { class:'sm-av', html: ico('user') }), h('div', null, h('div', { class:'sm-name' }, 'K3nGai'), h('div', { class:'sm-role' }, '이름 없는 탐정'))));
+  m.appendChild(h('div', { class:'sm-sec' }, '앱'));
+  var list = h('div', { class:'sm-list' });
+  ICON_ORDER.concat(['found']).forEach(function(id){
+    var a = APPS[id]; if (!S.apps[id] && !a.always && !a.noIcon) return;
+    list.appendChild(smItem(a.ic, a.name, function(){ E.open(id); }));
+  });
+  m.appendChild(list);
+  m.appendChild(h('div', { class:'sm-foot' },
+    smItem('monitor', '바탕 화면', showDesktop),
+    smItem(S.sound ? 'volume-x' : 'volume-2', S.sound ? '소리 끄기' : '소리 켜기', toggleSound),
+    smItem('power', '로그아웃', function(){ saveNow(); location.reload(); })));
+  m.classList.remove('hidden'); $('#tb-start').classList.add('on');
+  var first = m.querySelector('.sm-item'); if (first) first.focus();
+}
+function showDesktop(){ Object.keys(WM.wins).forEach(minWin); }
+function toggleSound(){ S.sound = !S.sound; if (E._setSound) E._setSound(); save(); }
+function showCtx(e){
+  if (!S || e.target.closest('.win') || e.target.closest('#sticky')) return;
+  e.preventDefault(); hideMenus();
+  var m = $('#ctxmenu'); m.innerHTML = '';
+  var ic = e.target.closest('.icon');
+  function item(icon, label, fn){ return h('button', { class:'cm-item', role:'menuitem', html: ico(icon) + '<span>' + esc(label) + '</span>', onclick:function(){ hideMenus(); fn(); } }); }
+  if (ic) {
+    var id = ic.getAttribute('data-app'); selectIcon(id);
+    m.appendChild(item('folder-open', '열기', function(){ E.open(id); }));
+  } else {
+    selectIcon(null);
+    m.appendChild(item('refresh-cw', '새로 고침', function(){ renderIcons(); }));
+    m.appendChild(item('monitor', '바탕 화면 보기', showDesktop));
+    m.appendChild(h('hr'));
+    m.appendChild(item(S.sound ? 'volume-x' : 'volume-2', S.sound ? '소리 끄기' : '소리 켜기', toggleSound));
+  }
+  m.classList.remove('hidden');
+  var x = Math.min(e.clientX, window.innerWidth - m.offsetWidth - 8), y = Math.min(e.clientY, window.innerHeight - m.offsetHeight - 8);
+  m.style.left = Math.max(8, x) + 'px'; m.style.top = Math.max(8, y) + 'px';
+}
+function marqueeify(){
+  var dk = $('#desktop'), mq = $('#marquee'), drag = null;
+  dk.addEventListener('pointerdown', function(e){
+    if (e.button !== 0 || touchMode()) return;
+    if (e.target.closest('.win') || e.target.closest('.icon') || e.target.closest('#sticky')) return;
+    hideMenus(); selectIcon(null);
+    var r = dk.getBoundingClientRect();
+    drag = { x: e.clientX - r.left, y: e.clientY - r.top, ox: r.left, oy: r.top };
+  });
+  window.addEventListener('pointermove', function(e){
+    if (!drag) return;
+    var x = e.clientX - drag.ox, y = e.clientY - drag.oy;
+    var l = Math.min(x, drag.x), t = Math.min(y, drag.y), w = Math.abs(x - drag.x), hh = Math.abs(y - drag.y);
+    if (w < 4 && hh < 4) return;
+    mq.classList.remove('hidden'); mq.style.left = l + 'px'; mq.style.top = t + 'px'; mq.style.width = w + 'px'; mq.style.height = hh + 'px';
+    var sel = {};
+    $$('#icons .icon').forEach(function(el){
+      var b = el.getBoundingClientRect(), bl = b.left - drag.ox, bt = b.top - drag.oy;
+      if (bl < l + w && bl + b.width > l && bt < t + hh && bt + b.height > t) sel[el.getAttribute('data-app')] = true;
+    });
+    DESK.sel = sel; paintSel();
+  });
+  window.addEventListener('pointerup', function(){ if (drag) { drag = null; mq.classList.add('hidden'); } });
 }
 function updateFound(){
   var n = 0; for (var k in S.seen) n++;
@@ -349,6 +439,8 @@ function updateFound(){
 function tickClock(){
   var n = gameNow();
   $('#tb-clock').innerHTML = n.hm + '<br>' + n.ymd + '(' + n.dow + ')';
+  $('#lock .lk-time').textContent = n.hm;
+  $('#lock .lk-date').textContent = '11월 22일 일요일';
 }
 
 /* ---------------- 본문 마크업 ---------------- */
@@ -1498,6 +1590,22 @@ function startGame(fresh){
   renderIcons(); updateFound(); tickClock(); if (E._setSound) E._setSound();
   setInterval(tickClock, 15000);
   setInterval(function(){ if (running && !document.hidden && S && !S.endDone) { S.playMs += 1000; if (S.playMs % 10000 === 0) saveNow(); } }, 1000);
+  var lock = $('#lock'), done = false;
+  if (!$('.lk-wall', lock)) { var wp = $('#wallpaper').cloneNode(true); wp.removeAttribute('id'); wp.setAttribute('class', 'lk-wall'); lock.insertBefore(wp, lock.firstChild); }
+  lock.classList.remove('hidden');
+  $('.lk-av', lock).innerHTML = ico('user');
+  function login(){
+    if (done) return; done = true;
+    document.removeEventListener('keydown', onKey);
+    ac(); sfx('notify'); lock.classList.add('hidden');
+    afterLogin(fresh);
+  }
+  function onKey(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); login(); } }
+  $('#lk-in').addEventListener('click', login);
+  document.addEventListener('keydown', onKey);
+  setTimeout(function(){ $('#lk-in').focus(); }, 50);
+}
+function afterLogin(fresh){
   if (fresh) startChapter(0);
   else {
     if (S.ending && S.endDone) toast('엔딩을 본 기록이 있습니다', '「' + D.endings[S.ending].name + '」 · 계속 둘러볼 수 있습니다');
@@ -1519,10 +1627,15 @@ E.boot = function(data){
   del.addEventListener('click', function(){ if (!confirm('저장 데이터를 삭제할까요? 되돌릴 수 없습니다.')) return; wipeSave(); saved = null; cont.classList.add('hidden'); del.classList.add('hidden'); nw.classList.add('pri'); });
   $('#tb-found').addEventListener('click', function(){ if (S) E.open('found'); });
   var setSound = function(){ $('#tb-sound').innerHTML = ico(S && !S.sound ? 'volume-x' : 'volume-2'); };
-  setSound(); $('#tb-start').innerHTML = ico('minimize-2');
+  setSound(); $('#tb-start').innerHTML = ico('layout-grid'); $('#tb-net').innerHTML = ico('wifi'); $('#tb-bat').innerHTML = ico('battery-charging');
   $('#tb-sound').addEventListener('click', function(){ if (!S) return; S.sound = !S.sound; setSound(); save(); });
   E._setSound = setSound;
-  $('#tb-start').addEventListener('click', function(){ Object.keys(WM.wins).forEach(minWin); });
+  $('#tb-start').addEventListener('click', function(e){ e.stopPropagation(); if (S) toggleStart(); });
+  $('#tb-desk').addEventListener('click', function(){ if (S) { hideMenus(); showDesktop(); } });
+  $('#desktop').addEventListener('contextmenu', showCtx);
+  document.addEventListener('pointerdown', function(e){ if (!e.target.closest('#startmenu') && !e.target.closest('#ctxmenu') && !e.target.closest('#tb-start')) hideMenus(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') hideMenus(); });
+  marqueeify();
   window.addEventListener('beforeunload', saveNow);
   document.addEventListener('visibilitychange', function(){ if (document.hidden) saveNow(); });
 };

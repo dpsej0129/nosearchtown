@@ -30,7 +30,7 @@ async function focus(id) { await p.evaluate(id => { const w = document.querySele
 async function click(sel) { const m = sel.match(/\.win\[data-id=(\w+)\]/); if (m) await focus(m[1]); await p.click(sel); }
 async function icon(name) {
   const sel = '.icon:has-text("' + name + '")';
-  try { await p.click(sel, { timeout: 1500 }); } catch (e) { await p.click('#tb-start'); await p.click(sel); } // 가려져 있으면 「모두 최소화」 후 누른다
+  try { await p.dblclick(sel, { timeout: 1500 }); } catch (e) { await p.click('#tb-desk'); await p.dblclick(sel); } // 바탕화면 아이콘은 두 번 눌러 연다. 가려져 있으면 「바탕 화면 보기」 후
   await p.waitForTimeout(250);
 }
 async function search(q, arch) {
@@ -87,7 +87,7 @@ async function wrongCp(vals) {
   p.on('dialog', d => d.accept());
   await p.goto(URL);
   await shot('title');
-  await p.click('#t-new'); await p.waitForTimeout(500); await shot('titlecard_c0'); await dismiss();
+  await p.click('#t-new'); await p.waitForTimeout(500); await shot('lock'); await p.click('#lk-in'); await p.waitForTimeout(500); await shot('titlecard_c0'); await dismiss();
 
   /* ---------------- 서장 ---------------- */
   log('서장');
@@ -261,7 +261,7 @@ async function wrongCp(vals) {
   /* ---------------- 다른 엔딩 두 개 ---------------- */
   for (const [label, name] of [['특정한다', '불씨'], ['덮는다', '침묵']]) {
     await p.evaluate(s => localStorage.setItem('kengai_save_v1', s), snap);
-    await p.reload(); await p.click('#t-continue'); await p.waitForTimeout(400); await dismiss();
+    await p.reload(); await p.click('#t-continue'); await p.click('#lk-in'); await p.waitForTimeout(400); await dismiss();
     await p.evaluate(() => Engine.open('final')); await p.waitForTimeout(200);
     await click('.win[data-id=final] .opt:has-text("' + label + '")'); await p.waitForTimeout(400);
     await dismiss(); await p.waitForTimeout(600);
@@ -273,7 +273,7 @@ async function wrongCp(vals) {
   const m = await browser.newPage({ viewport: { width: 390, height: 780 }, deviceScaleFactor: 1 });
   m.on('pageerror', e => errs.push('mobile pageerror: ' + e.message));
   await m.goto(URL); await m.evaluate(s => localStorage.setItem('kengai_save_v1', s), snap); await m.reload();
-  await m.click('#t-continue'); await m.waitForTimeout(400);
+  await m.click('#t-continue'); await m.click('#lk-in'); await m.waitForTimeout(400);
   await m.screenshot({ path: path.join(OUT, 'mobile_desktop.png') });
   await m.click('.icon:has-text("메아리 검색")'); await m.fill('.srch-form .inp', '유메링'); await m.press('.srch-form .inp', 'Enter'); await m.waitForTimeout(200);
   await m.screenshot({ path: path.join(OUT, 'mobile_search.png') });
